@@ -11,9 +11,6 @@ def main():
     injector = Injector([ChungMuro()])
     commander = injector.get(Commander)
 
-    # Streamlit 앱 UI 구성
-    st.set_page_config(page_title="CJ 올리브영", layout="wide")
-
     if len(sys.argv) != 3:
         print("Usage: main.py <quiz_company> <enter_dvcd>")
         #sys.exit(1)

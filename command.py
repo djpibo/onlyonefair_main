@@ -25,6 +25,7 @@ class Commander:
 
     def start_nfc_polling(self, argv_arr):
         print(argv_arr)
+        # Streamlit 앱 UI 구성
         while True:
             nfc_uid = self.nfc_mgr.nfc_receiver()
 
@@ -35,6 +36,7 @@ class Commander:
                 login_dto: LoginDTO = self.common_mgr.get_login_info(nfc_uid, comp_dvcd,enter_dvcd)
                 nm = self.common_mgr.get_peer_name(nfc_uid)
 
+                Euljiro.set_title(argv_arr[1])
                 Euljiro.writer(f"{nm}님 입장하셨습니다.")
 
                 if enter_dvcd == ENTER_DVCD_ENTRANCE:
