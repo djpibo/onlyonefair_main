@@ -1,0 +1,28 @@
+Metadata-Version: 2.1
+Name: PySmartCard
+Version: 1.4.1
+Summary: CPU card [non-logic encryption card] operation library, providing support for PCSC/D8/D6/T6 readers
+Home-page: https://www.maybetodaystudio.com/blog/2018/11/25/python_smart_card/
+Author: jaymi_k
+Author-email: jinming_huang@foxmail.com
+License: GPL
+Keywords: smartcard,cpucard,pysmartcard,PySmartCard,pythonsmartcard,PythonSmartCard,reader,PCSC,D6,D8,T6,pyscard
+Platform: UNKNOWN
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: Topic :: Software Development :: Libraries :: Application Frameworks
+Classifier: License :: OSI Approved :: GNU General Public License (GPL)
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 2.5
+Classifier: Programming Language :: Python :: 2.6
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.3
+Classifier: Programming Language :: Python :: 3.4
+Classifier: Programming Language :: Python :: 3.5
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+
+PySmartCard is a python library for reading and writing smart cards[CPU Card]. It provides support for PCSC/D8/D6/T6 readers for Windows and Linux systems, and encapsulates some commonly used algorithms for CPU cards, such as 3DES_ECB, 3DES_CBC, SM4, and MAC. For specific usage, please refer to the demo.py file in the installation directory.
+
+
