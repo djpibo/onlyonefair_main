@@ -25,6 +25,7 @@ class Commander:
 
     def start_nfc_polling(self, argv_arr):
         print(argv_arr)
+        Euljiro.set_title(argv_arr[1])
         # Streamlit 앱 UI 구성
         while True:
             nfc_uid = self.nfc_mgr.nfc_receiver()
@@ -33,11 +34,8 @@ class Commander:
 
                 comp_dvcd = self.common_mgr.get_cmn_cd("회사명", argv_arr[1])
                 enter_dvcd = self.common_mgr.get_cmn_cd("입퇴장구분코드", argv_arr[2])
-                login_dto: LoginDTO = self.common_mgr.get_login_info(nfc_uid, comp_dvcd,enter_dvcd)
-                nm = self.common_mgr.get_peer_name(nfc_uid)
-
-                Euljiro.set_title(argv_arr[1])
-                Euljiro.writer(f"{nm}님 입장하셨습니다.")
+                peer_name = self.common_mgr.get_peer_name(nfc_uid)
+                login_dto: LoginDTO = self.common_mgr.get_login_info(nfc_uid, comp_dvcd, peer_name)
 
                 if enter_dvcd == ENTER_DVCD_ENTRANCE:
                     self.validate_enter(login_dto) # 입장 검증
@@ -69,6 +67,7 @@ class Commander:
                 self.score_mgr.set_score(set_to_score_info)
 
                 # TODO GUI
+                Euljiro.show_text(f"{self.common_mgr.get_common_desc(latest_enter_info.company_dvcd)}은/는 최소 점수로 입장 처리됐습니다.")
                 print(f"[log] 최소 점수로 입장 처리. 클래스명: "
                       f"{self.common_mgr.get_common_desc(latest_enter_info.company_dvcd)}")
 
@@ -77,11 +76,13 @@ class Commander:
 
         if reenter_enter_info is not None:  # 퇴장 여부가 있다는 것은 재입장이라는 뜻
             print("[log] 재입장 처리 진행")
+            Euljiro.show_text(f"{login_dto.peer_name}님 재입장입니다. 입장 포인트는 부여되지 않습니다.")
             self.enter_mgr.set_to_reenter(reenter_enter_info)
         # TODO N차 재입장 > 순번 부여로 해결 완료
 
         else:  # 최초 입장
             print("[log] 최초 입장 처리 진행")
+            Euljiro.show_text(f"{login_dto.peer_name}님 입장! 입장 포인트(50p) 획득!")
             # 입장 포인트 부여
             self.score_mgr.set_entrance_point(login_dto)
             self.enter_mgr.set_to_enter(login_dto)
@@ -94,6 +95,7 @@ class Commander:
             if CommonUtil.is_less_than_one_minute_interval(self.enter_mgr.get_latest_exit(login_dto).created_at):
                 print(f"[log] 연속 거래 방지")
             else:
+                Euljiro.show_text(f"{login_dto.peer_name}님! 입실 태그 먼저 찍으세요~")
                 print("[error] 입장 먼저 하세요.")
 
         # 정상 퇴장 진행
@@ -106,6 +108,8 @@ class Commander:
                 min_time_point = CommonUtil.get_min_time_by_company_dvcd(latest_enter_info.company_dvcd)
                 if min_time_point is not None and score < min_time_point:
                     # TODO GUI (퇴장 허용 or 0점 퇴장)
+                    Euljiro.show_text(f"{login_dto.peer_name}님! 아직 최소 시간을 채우지 못했습니다."
+                                      f" {format(ScoreUtil.calculate_time_by_score(min_time_point, score))}가 더 필요해요~")
                     print("[error] 최소 시간 미달입니다. {} 필요"
                           .format(ScoreUtil.calculate_time_by_score(min_time_point, score)))
 
@@ -123,6 +127,7 @@ class Commander:
             )
             self.score_mgr.set_score(stay_score_info)
 
+            Euljiro.show_text(f"{login_dto.peer_name}님, 퇴장 완료! {score} 포인트 획득!")
             print("[log] 퇴장 처리 진행")
             # TODO 재입장 체류시간 로직 개발 > 완료 (일련번호 칼럼 추가)
             print(f"[log] latest_enter_info = {latest_enter_info}")

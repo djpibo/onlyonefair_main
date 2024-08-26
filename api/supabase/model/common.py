@@ -16,6 +16,7 @@ class CommonCodeDTO(BaseModel):
 class LoginDTO(BaseModel):
     peer_id: int
     argv_company_dvcd: int
+    peer_name: Optional[str] = None
 
     class Config:
         from_attributes = True

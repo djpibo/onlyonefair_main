@@ -1,6 +1,5 @@
 import sys
 
-import streamlit as st
 from injector import Injector
 from command import Commander
 from inject_module import ChungMuro
