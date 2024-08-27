@@ -25,7 +25,8 @@ class Commander:
 
     def start_nfc_polling(self, argv_arr):
         print(argv_arr)
-        Euljiro.set_title(argv_arr[1])
+        #Euljiro.init_layout_1(argv_arr[1])
+        Euljiro.size_layout()
         # Streamlit 앱 UI 구성
         while True:
             nfc_uid = self.nfc_mgr.nfc_receiver()
@@ -68,6 +69,7 @@ class Commander:
 
                 # TODO GUI
                 Euljiro.show_text(f"{self.common_mgr.get_common_desc(latest_enter_info.company_dvcd)}은/는 최소 점수로 입장 처리됐습니다.")
+
                 print(f"[log] 최소 점수로 입장 처리. 클래스명: "
                       f"{self.common_mgr.get_common_desc(latest_enter_info.company_dvcd)}")
 
@@ -77,12 +79,14 @@ class Commander:
         if reenter_enter_info is not None:  # 퇴장 여부가 있다는 것은 재입장이라는 뜻
             print("[log] 재입장 처리 진행")
             Euljiro.show_text(f"{login_dto.peer_name}님 재입장입니다. 입장 포인트는 부여되지 않습니다.")
+            Euljiro.draw_progress_bar(self.score_mgr.get_current_score(login_dto))
             self.enter_mgr.set_to_reenter(reenter_enter_info)
         # TODO N차 재입장 > 순번 부여로 해결 완료
 
         else:  # 최초 입장
             print("[log] 최초 입장 처리 진행")
-            Euljiro.show_text(f"{login_dto.peer_name}님 입장! 입장 포인트(50p) 획득!")
+            Euljiro.init_layout(f"{login_dto.peer_name}님 입장! 입장 포인트(50p) 획득!",
+                                (self.score_mgr.get_current_score(login_dto)))
             # 입장 포인트 부여
             self.score_mgr.set_entrance_point(login_dto)
             self.enter_mgr.set_to_enter(login_dto)

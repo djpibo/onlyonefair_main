@@ -2,7 +2,7 @@ import time
 
 from api.google.sheet_client import GoogleSheetsClient
 from api.supabase.model.nfc import EntranceInfoDTO
-from api.supabase.model.quiz import RankDTO
+from api.supabase.model.quiz import RankDTO, ScoreInfoDTO
 from api.supabase.repo.common_repo import CommonRepository
 from api.supabase.repo.entrance_repo import EntranceRepository
 from api.supabase.repo.score_repo import ScoreRepository
@@ -77,6 +77,10 @@ class ScoreMgr:
 
     def set_score(self, score_dto):
         self.score_repo.update_nfc_exist_time_score(score_dto)
+
+    def get_current_score(self, login_dto):
+        score_info: ScoreInfoDTO = self.score_repo.get_user_current_score(login_dto.peer_id)
+        return sum(item['score'] for item in score_info)
 
     def set_entrance_point(self, login_dto):
         self.score_repo.update_entrance_score(login_dto.peer_id, login_dto.argv_company_dvcd)

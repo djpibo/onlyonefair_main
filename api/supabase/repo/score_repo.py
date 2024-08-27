@@ -23,6 +23,16 @@ class ScoreRepository:
 
         self.supabase.table("Score_Info").upsert(data_to_upsert, ignore_duplicates=True).execute()
 
+    def get_user_current_score(self, peer_id):
+        response = (
+            self.supabase.table("Score_Info")
+            .select("*")
+            .eq("id", peer_id)
+            .execute()
+        )
+        print(f"response >> {response}")
+        return response.data
+
     def select_nfc_score(self, peer_id):
         response = (
             self.supabase.table("Score_Info")

@@ -1,2 +1,8 @@
 [server]
 runOnSave = true
+# Enable wide mode
+enableCORS = false
+
+[browser]
+# Open the app in wide mode
+browser.gather = true
