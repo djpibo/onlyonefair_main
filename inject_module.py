@@ -6,7 +6,10 @@ from api.supabase.repo.entrance_repo import EntranceRepository
 from api.supabase.repo.peer_repo import PeerRepository
 from api.supabase.repo.score_repo import ScoreRepository
 from command import Commander
+from layout import Euljiro
+from service.batch_score import BatchMgr
 from service.common_service import CommonMgr
+from service.consume_point import PointMgr
 from service.nfc_service import NfcService
 from service.room_stay_service import EnterMgr, ExitMgr, ScoreMgr
 
@@ -55,13 +58,24 @@ class ChungMuro(Module):
         return NfcService()
 
     @provider
+    def provide_point_mgr(self, score_repo: ScoreRepository) -> PointMgr:
+        return PointMgr(score_repo)
+
+    @provider
+    def provide_batch_mgr(self, entrance_repo: EntranceRepository, score_repo: ScoreRepository) -> BatchMgr:
+        return BatchMgr(entrance_repo, score_repo)
+
+    @provider
     def provide_command(self,
                             enter_mgr: EnterMgr,
                             exit_mgr:ExitMgr,
                             score_mgr:ScoreMgr,
                             common_mgr:CommonMgr,
                             nfc_mgr:NfcService,
+                            eul:Euljiro,
+                            point_mgr:PointMgr,
+                            batch_mgr:BatchMgr
                             ) -> Commander:
-        return Commander(enter_mgr, exit_mgr, score_mgr, common_mgr, nfc_mgr)
+        return Commander(enter_mgr, exit_mgr, score_mgr, common_mgr, nfc_mgr, eul, point_mgr, batch_mgr)
 
 

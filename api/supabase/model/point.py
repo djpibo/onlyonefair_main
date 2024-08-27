@@ -12,3 +12,15 @@ class PeerInfoDTO(BaseModel):
 
     class Config:
         from_attributes = True
+
+class ConsumeInfoDTO(BaseModel):
+    id: int
+    created_at: Optional[datetime] = None
+    seqno: Optional[int] = None
+    consume_dvcd: int
+    used_score: float
+    cancel_yn: Optional[bool] = False
+
+
+    class Config:
+        from_attributes = True

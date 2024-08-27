@@ -13,3 +13,11 @@ class EntranceInfoDTO(BaseModel):
 
     class Config:
         from_attributes = True
+
+class CountInfoDTO(BaseModel):
+    id: int
+    created_at: Optional[datetime] = None
+    seqno: Optional[int] = None
+
+    class Config:
+        from_attributes = True

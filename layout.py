@@ -3,65 +3,75 @@ import time
 import streamlit as st
 import plotly.graph_objs as go
 
+from api.supabase.model.presentation import ScreenDTO
 from common.constants import MAX_TOTAL_POINT
-
 
 class Euljiro:
 
-    @staticmethod
-    def init_layout(text, current_score):
-        col1, col2 = st.columns([2,8])
-        with col1:
-            st.write(f"T.E.S.T")
-        with col2:
-            Euljiro.show_text(text)
-            Euljiro.draw_progress_bar(current_score)
+    def __init__(self):
+        self.st = st
+        self.c = st.container()
 
     @staticmethod
-    def size_layout():
-        # 상중하 영역 비율 설정
-        top_ratio = 1
-        middle_ratio = 2
-        bottom_ratio = 1
+    def init_layout(param):
+        st.set_page_config(
+            page_title=f"{param}",  # 페이지 제목
+            page_icon=":bar_chart:",  # 페이지 아이콘
+            layout="wide"  # 레이아웃을 wide로 설정
+        )
 
-        # 열 비율 계산
-        total_ratio = top_ratio + middle_ratio + bottom_ratio
-        top_width = top_ratio / total_ratio
-        middle_width = middle_ratio / total_ratio
-        bottom_width = bottom_ratio / total_ratio
+    @staticmethod
+    def show_text(param):
+        st.write(param)
 
-        # 페이지 레이아웃 설정
-        st.set_page_config(page_title="Three-Section Layout", layout="wide")
+    # 재사용 가능한 컴포넌트 함수 정의
+    @staticmethod
+    def reusable_component(placeholder, title, content, border_color="blue"):
+        with placeholder.container():
+            st.markdown(f"<h2 style='color:{border_color};'>{title}</h2>", unsafe_allow_html=True)
+            st.write(content)
 
+    def new_draw_whole(self, scr_dto):
+        placeholder = self.st.empty()
+
+        # Replace the chart with several elements:
+        with placeholder.container():
+            st.markdown(f"<h1 style='text-align: center;'>{scr_dto.peer_name}님, {scr_dto.enter_dvcd_kor}! </h1>",
+                        unsafe_allow_html=True)
+            st.markdown("---")
+
+            # 중간 영역
+            st.markdown("<h2 style='text-align: center;'>누적 스코어</h2>", unsafe_allow_html=True)
+            self.show_score(scr_dto.acc_score)
+
+            # 하단 영역
+            # st.markdown("---")
+            # st.markdown(f"<h1 style='text-align: center;'>재입장인 경우 입장 포인트는 제공되지 않음</h1>", unsafe_allow_html=True)
+
+        time.sleep(3)
+        placeholder.empty()
+
+    def draw_whole(self, scr_dto:ScreenDTO):
         # 상단 영역
-        st.markdown("<h1 style='text-align: center;'>상단 영역</h1>", unsafe_allow_html=True)
-        st.write("상단 영역 내용")
-        st.markdown("---")  # 구분선
+        c = self.c
+        c.empty()
+        st.markdown(f"<h1 style='text-align: center;'>{scr_dto.enter_dvcd_kor} {scr_dto.peer_name}</h1>", unsafe_allow_html=True)
+        st.markdown("---")
 
         # 중간 영역
-        col1, col2, col3 = st.columns([top_width, middle_width, bottom_width])
-        with col1:
-            st.write("")
-
-        with col2:
-            st.markdown("<h2 style='text-align: center;'>중간 영역</h2>", unsafe_allow_html=True)
-            st.write("중간 영역 내용")
-
-        with col3:
-            st.write("")
+        # middle_placeholder.markdown("<h2 style='text-align: center;'>누적 스코어</h2>", unsafe_allow_html=True)
+        self.show_score(110)
 
         # 하단 영역
-        st.markdown("---")  # 구분선
-        st.markdown("<h1 style='text-align: center;'>하단 영역</h1>", unsafe_allow_html=True)
-        st.write("하단 영역 내용")
+        st.markdown("---")
+        st.markdown(f"<h1 style='text-align: center;'></h1>", unsafe_allow_html=True)
 
     @staticmethod
-    def show_text(text):
-        placeholder = st.empty()
-        placeholder.write(text)
+    def show_notify(peer_name, enter_kor):
+        pass
 
-    @staticmethod
-    def draw_progress_bar(current_score):
+
+    def show_score(self, acc_score):
 
         # # 비중 계산
         # progress_percent = int((current_score / MAX_TOTAL_POINT) * 100)
@@ -74,7 +84,7 @@ class Euljiro:
 
         # 예시 데이터
         data = {
-            'Subcategory 1': current_score,
+            'Subcategory 1': acc_score,
             'Subcategory 2': MAX_TOTAL_POINT
         }
         # 서브 카테고리 색상 설정
@@ -112,14 +122,14 @@ class Euljiro:
                 showgrid=False  # y축 그리드 숨기기
             ),
             #title='현재 누적 점수',  # 그래프 제목 설정
-            height=500,  # 그래프 높이 설정 (픽셀 단위)
+            height=300,  # 그래프 높이 설정 (픽셀 단위)
             width=1600,  # 그래프 너비 설정 (픽셀 단위)
             showlegend=False,  # 범례 숨기기
             font = dict(size=200)  # 전체 폰트 크기 설정
         )
 
         # Streamlit 앱에 그래프 출력
-        st.plotly_chart(fig)
+        self.st.plotly_chart(fig)
 
         # # Plotly 막대 그래프 생성
         # fig = go.Figure(go.Bar(
@@ -142,11 +152,3 @@ class Euljiro:
         #
         # # Streamlit 앱에 그래프 출력
         # st.plotly_chart(fig)
-
-    @classmethod
-    def init_layout_1(cls, param):
-        st.set_page_config(
-            page_title= f"{param}",  # 페이지 제목
-            page_icon=":bar_chart:",  # 페이지 아이콘
-            layout="wide"  # 레이아웃을 wide로 설정
-        )

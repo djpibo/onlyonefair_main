@@ -1,14 +1,17 @@
 import time
 
 from api.supabase.model.common import LoginDTO
+from api.supabase.model.point import ConsumeInfoDTO
+from api.supabase.model.presentation import ScreenDTO
 from api.supabase.model.quiz import ScoreInfoDTO
 from common.constants import *
 from common.util import ScoreUtil, CommonUtil
 from layout import Euljiro
+from service.batch_score import BatchMgr
 from service.common_service import CommonMgr
+from service.consume_point import PointMgr
 from service.nfc_service import NfcService
 from service.room_stay_service import EnterMgr, ExitMgr, ScoreMgr
-
 
 class Commander:
     def __init__(self,
@@ -16,20 +19,25 @@ class Commander:
                  exit_mgr:ExitMgr,
                  score_mgr:ScoreMgr,
                  common_mgr:CommonMgr,
-                 nfc_mgr:NfcService):
+                 nfc_mgr:NfcService,
+                 eul:Euljiro,
+                 point_mgr:PointMgr,
+                 batch_mgr:BatchMgr):
         self.nfc_mgr = nfc_mgr
         self.exit_mgr = exit_mgr
         self.enter_mgr = enter_mgr
         self.score_mgr = score_mgr
         self.common_mgr = common_mgr
+        self.eul = eul
+        self.point_mgr = point_mgr
+        self.batch_mgr = batch_mgr
 
     def start_nfc_polling(self, argv_arr):
         print(argv_arr)
-        #Euljiro.init_layout_1(argv_arr[1])
-        Euljiro.size_layout()
         # Streamlit 앱 UI 구성
         while True:
             nfc_uid = self.nfc_mgr.nfc_receiver()
+            self.common_mgr.count_up(nfc_uid)
 
             if nfc_uid is not None:
 
@@ -78,15 +86,15 @@ class Commander:
 
         if reenter_enter_info is not None:  # 퇴장 여부가 있다는 것은 재입장이라는 뜻
             print("[log] 재입장 처리 진행")
-            Euljiro.show_text(f"{login_dto.peer_name}님 재입장입니다. 입장 포인트는 부여되지 않습니다.")
-            Euljiro.draw_progress_bar(self.score_mgr.get_current_score(login_dto))
+            # Euljiro.show_text(f"{login_dto.peer_name}님 재입장입니다. 입장 포인트는 부여되지 않습니다.")
+            scr_dto=ScreenDTO(peer_name=login_dto.peer_name, enter_dvcd_kor="입장", acc_score=1000, current_score=50)
+            Euljiro.new_draw_whole(self.eul, scr_dto)
+            # Euljiro.draw_whole(self.eul, scr_dto)
             self.enter_mgr.set_to_reenter(reenter_enter_info)
         # TODO N차 재입장 > 순번 부여로 해결 완료
 
         else:  # 최초 입장
             print("[log] 최초 입장 처리 진행")
-            Euljiro.init_layout(f"{login_dto.peer_name}님 입장! 입장 포인트(50p) 획득!",
-                                (self.score_mgr.get_current_score(login_dto)))
             # 입장 포인트 부여
             self.score_mgr.set_entrance_point(login_dto)
             self.enter_mgr.set_to_enter(login_dto)
@@ -140,3 +148,58 @@ class Commander:
 
     def start_sheet_data_batch(self):
         self.score_mgr.upload_data_to_sheet()
+
+    # 전 사원 중에서 퇴장 여부가 False에 한해, 일괄 퇴장 처리 및 점수 부여(TODO최소시간으로??)
+    def force_exit(self, login_dto=None, latest_enter_info=None):
+        # TODO 최소 시간 미달시 알림 + 재입장인 경우에는 pass > 테스트를 위해 열어둠
+        score = ScoreUtil.calculate_entrance_score(latest_enter_info.created_at)
+
+        # 최초 입장인 경우, 최소 잔류 시간 검증 -> 8분 처리
+        if latest_enter_info.enter_dvcd == ENTER_DVCD_ENTRANCE:
+            min_time_point = CommonUtil.get_min_time_by_company_dvcd(latest_enter_info.company_dvcd)
+            if min_time_point is not None and score < min_time_point:
+                # TODO GUI (퇴장 허용 or 0점 퇴장)
+                Euljiro.show_text(f"{login_dto.peer_name}님! 아직 최소 시간을 채우지 못했습니다."
+                                  f" {format(ScoreUtil.calculate_time_by_score(min_time_point, score))}가 더 필요해요~")
+                print("[error] 최소 시간 미달입니다. {} 필요"
+                      .format(ScoreUtil.calculate_time_by_score(min_time_point, score)))
+
+        # 상한 시간 지정
+        max_time_point = CommonUtil.get_max_time_by_company_dvcd(latest_enter_info.company_dvcd)
+        if max_time_point is not None and score > max_time_point:
+            score = max_time_point
+
+        # TODO 퇴장 점수 반영 > 반영 완료.
+        stay_score_info = ScoreInfoDTO(
+            id=login_dto.peer_id,
+            quiz_dvcd=QUIZ_DVCD_NFC_EXIST_TIME,
+            company_dvcd=login_dto.argv_company_dvcd,
+            score=score
+        )
+        self.score_mgr.set_score(stay_score_info)
+
+        Euljiro.show_text(f"{login_dto.peer_name}님, 퇴장 완료! {score} 포인트 획득!")
+        print("[log] 퇴장 처리 진행")
+        # TODO 재입장 체류시간 로직 개발 > 완료 (일련번호 칼럼 추가)
+        print(f"[log] latest_enter_info = {latest_enter_info}")
+        self.exit_mgr.set_enter_exit(latest_enter_info)  # latest 입장 > 퇴장 여부 True
+        self.exit_mgr.set_exit_true(latest_enter_info)  # 실제 퇴장 insert
+
+    def point_consumer(self):
+        while True:
+            nfc_uid = self.nfc_mgr.nfc_receiver()
+            if nfc_uid is not None:
+                peer_id=self.common_mgr.get_peer_id(nfc_uid)
+                current_point = self.score_mgr.get_current_score(LoginDTO(peer_id=peer_id, argv_company_dvcd=99))
+                print(f"[log] 점수 확인 {current_point}")
+                if current_point > CONSUME_LUCKY_POINT:
+                    self.point_mgr.consume_point(
+                        ConsumeInfoDTO(id=peer_id,
+                                     consume_dvcd=CONSUME_PHOTO_DVCD,
+                                     used_score=CONSUME_PHOTO_POINT))
+                    re_point = current_point - self.score_mgr.get_total_used_score(peer_id)
+                    print(f"[log] 현재 잔여 포인트 "
+                          f"{re_point}")
+                    time.sleep(10)
+                else:
+                    print(f"[log] 포인트가 부족합니다 :<")

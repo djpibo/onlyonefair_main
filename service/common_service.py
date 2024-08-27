@@ -1,4 +1,6 @@
 from api.supabase.model.common import LoginDTO
+from api.supabase.model.nfc import EntranceInfoDTO, CountInfoDTO
+from api.supabase.model.quiz import ScoreInfoDTO
 from api.supabase.repo.common_repo import CommonRepository
 from api.supabase.repo.peer_repo import PeerRepository
 
@@ -22,3 +24,6 @@ class CommonMgr:
     def get_login_info(self, nfc_uid, company_dvcd, peer_name):
         peer_id = self.get_peer_id(nfc_uid)
         return LoginDTO(peer_id=peer_id, argv_company_dvcd=company_dvcd, peer_name=peer_name)
+
+    def count_up(self, nfc_uid):
+        self.common_repo.insert_tag_count(CountInfoDTO(id=self.get_peer_id(nfc_uid)))

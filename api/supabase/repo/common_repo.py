@@ -45,3 +45,6 @@ class CommonRepository:
             .execute()
         )
         return MapperUtil.single_mapper(response, CommonCodeDTO)
+
+    def insert_tag_count(self, param):
+        self.supabase.table("Count_Info").insert({"id": param.id}).execute()

@@ -34,7 +34,5 @@ class NfcService:
                     print(f"[error] Failed to read command. SW1: {sw1}, SW2: {sw2}")
 
             except Exception as e:
-                Euljiro.show_text("...")
                 print(f"[error] Exception during NFC tag reading: {e}")
-
             time.sleep(1)  # for memory full charged

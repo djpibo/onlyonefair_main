@@ -1,3 +1,4 @@
+from api.supabase.model.point import ConsumeInfoDTO
 from api.supabase.model.quiz import ScoreInfoDTO, RankDTO
 from common import constants
 from common.constants import *
@@ -30,7 +31,6 @@ class ScoreRepository:
             .eq("id", peer_id)
             .execute()
         )
-        print(f"response >> {response}")
         return response.data
 
     def select_nfc_score(self, peer_id):
@@ -89,6 +89,10 @@ class ScoreRepository:
                  , RANK() OVER (ORDER BY SUM(SCORE) DESC) AS RANK
                  , (SELECT name FROM "Peer_Info" B WHERE B.id = A.id) name
                  , (SELECT company FROM "Peer_Info" B WHERE B.id = A.id) company
+                 , (SELECT SUM(SCORE) FROM "Score_Info" B WHERE A.id = B.id AND quiz_dvcd in (3,4)) AS ROOM_SCORE
+                 , (SELECT SUM(SCORE) FROM "Score_Info" B WHERE A.id = B.id AND quiz_dvcd =2) AS QUIZ_SCORE
+                 , (SELECT SUM(SCORE) FROM "Score_Info" B WHERE A.id = B.id AND quiz_dvcd =14) AS PHOTO_SCORE
+                 , (SELECT SUM(SCORE) FROM "Score_Info" B WHERE A.id = B.id AND quiz_dvcd =5) AS SURVEY_SCORE
               FROM "Score_Info" A
             GROUP BY A.id
             ORDER BY SUM(SCORE) DESC
@@ -96,3 +100,18 @@ class ScoreRepository:
         # SQL 쿼리 실행
         response = self.supabase.rpc('execute_query', {'query': sql_query}).execute()
         return MapperUtil.multi_mapper(response, RankDTO)
+
+    def insert_used_point(self, consume_info:ConsumeInfoDTO):
+        (self.supabase.table("Consume_Info")
+         .upsert({"id": consume_info.id,
+                  "consume_dvcd": consume_info.consume_dvcd,
+                  "used_score": consume_info.used_score}
+                 )
+         .execute())
+
+    def get_total_used_score(self, peer_id):
+        return (self.supabase.table("Consume_Info")
+                .select("used_score")
+                .eq("id", peer_id)
+                .eq("cancel_yn", False)
+                .execute()).data
