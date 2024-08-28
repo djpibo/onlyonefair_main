@@ -21,6 +21,15 @@ class ConsumeInfoDTO(BaseModel):
     used_score: float
     cancel_yn: Optional[bool] = False
 
+    class Config:
+        from_attributes = True
+
+class OliveInfoDTO(BaseModel):
+    id: int
+    created_at: Optional[datetime] = None
+    seqno: Optional[int] = None
+    count: Optional[int]
+    used_count: Optional[int]
 
     class Config:
         from_attributes = True

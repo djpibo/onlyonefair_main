@@ -1,5 +1,6 @@
 from api.supabase.model.common import LoginDTO
 from api.supabase.model.nfc import EntranceInfoDTO, CountInfoDTO
+from api.supabase.model.point import OliveInfoDTO
 from api.supabase.model.quiz import ScoreInfoDTO
 from api.supabase.repo.common_repo import CommonRepository
 from api.supabase.repo.peer_repo import PeerRepository
@@ -27,3 +28,6 @@ class CommonMgr:
 
     def count_up(self, nfc_uid):
         self.common_repo.insert_tag_count(CountInfoDTO(id=self.get_peer_id(nfc_uid)))
+
+    def olive_count_up(self, olive_info:OliveInfoDTO):
+        self.common_repo.upsert_olive_count(olive_info)

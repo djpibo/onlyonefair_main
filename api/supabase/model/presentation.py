@@ -7,6 +7,4 @@ class ScreenDTO(BaseModel):
     enter_dvcd_kor: Optional[str]
     acc_score: Optional[float]
     current_score: Optional[float]
-
-    class Config:
-        from_attributes = True
+    comment: Optional[str]

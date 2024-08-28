@@ -2,7 +2,7 @@ import time
 
 from api.google.sheet_client import GoogleSheetsClient
 from api.supabase.model.nfc import EntranceInfoDTO
-from api.supabase.model.point import ConsumeInfoDTO
+from api.supabase.model.point import ConsumeInfoDTO, OliveInfoDTO
 from api.supabase.model.quiz import RankDTO, ScoreInfoDTO
 from api.supabase.repo.common_repo import CommonRepository
 from api.supabase.repo.entrance_repo import EntranceRepository
@@ -53,7 +53,6 @@ class EnterMgr:
     def get_latest_exit(self, login_dto):
         return self.entrance_repo.check_exit_to_entrance_info(login_dto.peer_id, login_dto.argv_company_dvcd)
 
-
 class ExitMgr:
     def __init__(self
                  , entrance_repo: EntranceRepository):
@@ -81,7 +80,15 @@ class ScoreMgr:
 
     def get_current_score(self, login_dto):
         score_info: ScoreInfoDTO = self.score_repo.get_user_current_score(login_dto.peer_id)
+        if score_info is None:
+            return 0
         return sum(item['score'] for item in score_info)
+
+    def get_current_olive(self, peer_id):
+        return self.score_repo.get_data_olive_info(peer_id)
+
+    def get_exp_score(self, score_dto:ScoreInfoDTO):
+        return self.score_repo.get_exp_score(score_dto)
 
     def get_total_used_score(self, peer_id):
         consume_info: ConsumeInfoDTO = self.score_repo.get_total_used_score(peer_id)

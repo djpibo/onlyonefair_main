@@ -48,3 +48,6 @@ class CommonRepository:
 
     def insert_tag_count(self, param):
         self.supabase.table("Count_Info").insert({"id": param.id}).execute()
+
+    def upsert_olive_count(self, olive_info):
+        self.supabase.table("Olive_Info").upsert({"id":olive_info.id, "count": olive_info.count}).execute()

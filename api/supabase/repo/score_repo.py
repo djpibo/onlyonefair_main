@@ -1,4 +1,4 @@
-from api.supabase.model.point import ConsumeInfoDTO
+from api.supabase.model.point import ConsumeInfoDTO, OliveInfoDTO
 from api.supabase.model.quiz import ScoreInfoDTO, RankDTO
 from common import constants
 from common.constants import *
@@ -31,7 +31,18 @@ class ScoreRepository:
             .eq("id", peer_id)
             .execute()
         )
+        if response.data is None:
+            return None
         return response.data
+
+    def get_data_olive_info(self, peer_id):
+        response = (
+            self.supabase.table("Olive_Info")
+            .select("*")
+            .eq("id", peer_id)
+            .execute()
+        )
+        return MapperUtil.single_mapper(response, OliveInfoDTO)
 
     def select_nfc_score(self, peer_id):
         response = (
@@ -114,4 +125,27 @@ class ScoreRepository:
                 .select("used_score")
                 .eq("id", peer_id)
                 .eq("cancel_yn", False)
+                .execute()).data
+
+    def update_olive_data(self, olive_info):
+        self.supabase.table("Olive_Info").update({"used_count": olive_info.used_info}).eq("id", olive_info.peer_id).execute()
+
+    # 연속 차감 여부 확인
+    def check_latest_consume(self, peer_id):
+        response = (
+            self.supabase.table("Consume_Info")
+            .select("*")
+            .eq("id", peer_id)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        return MapperUtil.single_mapper(response, ConsumeInfoDTO)
+
+    def get_exp_score(self, score_dto:ScoreInfoDTO):
+        return (self.supabase.table("Score_Info")
+                .select("score")
+                .eq("id", score_dto.id)
+                .eq("company_dvcd", score_dto.company_dvcd)
+                .eq("quiz_dvcd", score_dto.quiz_dvcd)
                 .execute()).data
