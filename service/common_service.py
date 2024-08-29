@@ -19,6 +19,9 @@ class CommonMgr:
     def get_peer_name(self, nfc_uid):
         return self.peer_repo.fetch_peer_id_from_supabase(nfc_uid).name
 
+    def get_peer_name_by_id(self, key_id):
+        return self.peer_repo.fetch_peer_info_by_id(key_id).name
+
     def get_common_desc(self, company_dvcd):
         return self.common_repo.get_common_by_cmn_id(company_dvcd).cmn_desc
 

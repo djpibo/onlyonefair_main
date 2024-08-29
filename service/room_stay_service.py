@@ -88,7 +88,10 @@ class ScoreMgr:
         return self.score_repo.get_data_olive_info(peer_id)
 
     def get_exp_score(self, score_dto:ScoreInfoDTO):
-        return self.score_repo.get_exp_score(score_dto)
+        score_info = self.score_repo.get_exp_score(score_dto)
+        print(f"[log] 사별, 누적 스코어 : {score_info}")
+        return sum(item['score'] for item in score_info)
+
 
     def get_total_used_score(self, peer_id):
         consume_info: ConsumeInfoDTO = self.score_repo.get_total_used_score(peer_id)

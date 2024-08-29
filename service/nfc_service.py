@@ -3,9 +3,6 @@ import time
 from smartcard.System import readers
 from smartcard.util import toHexString
 
-from layout import Euljiro
-
-
 class NfcService:
     def __init__(self):
         self.reader = readers()
@@ -35,4 +32,5 @@ class NfcService:
 
             except Exception as e:
                 print(f"[error] Exception during NFC tag reading: {e}")
+
             time.sleep(1)  # for memory full charged

@@ -149,3 +149,9 @@ class ScoreRepository:
                 .eq("company_dvcd", score_dto.company_dvcd)
                 .eq("quiz_dvcd", score_dto.quiz_dvcd)
                 .execute()).data
+
+    def get_used_score_by_id(self, peer_id):
+        return (self.supabase.table("Consume_Info")
+                .select("used_score")
+                .eq("id", peer_id)
+                .execute()).data

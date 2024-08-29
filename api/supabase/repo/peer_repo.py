@@ -15,3 +15,12 @@ class PeerRepository:
             .execute()
         )
         return MapperUtil.single_mapper(response, PeerInfoDTO)
+
+    def fetch_peer_info_by_id(self, key_id):
+        response = (
+            self.supabase.table("Peer_Info")
+            .select("*")
+            .eq("id", key_id)
+            .execute()
+        )
+        return MapperUtil.single_mapper(response, PeerInfoDTO)

@@ -20,6 +20,9 @@ def main():
         commander.start_nfc_polling(sys.argv)
 
     if len(sys.argv) == 4: # 강제 종료
+        commander.start_key_polling(sys.argv)
+
+    if len(sys.argv) == 5: # 강제 종료
         commander.force_exit()
 
 
