@@ -137,7 +137,7 @@ class Commander:
 
             # 최초 입장인 경우, 최소 잔류 시간 검증
             if latest_enter_info.enter_dvcd == ENTER_DVCD_ENTRANCE:
-                min_time_point = CommonUtil.get_min_time_by_company_dvcd(login_dto.company_dvcd)
+                min_time_point = CommonUtil.get_min_time_by_company_dvcd(login_dto.argv_company_dvcd)
                 if min_time_point is not None and score < min_time_point:
                     # TODO GUI (퇴장 허용 or 0점 퇴장)
                     Euljiro.show_text(f"{login_dto.peer_name}님! 아직 최소 시간을 채우지 못했습니다."
@@ -147,6 +147,7 @@ class Commander:
 
             # 상한 시간 지정
             max_time_point = CommonUtil.get_max_time_by_company_dvcd(login_dto.argv_company_dvcd)
+            print(f"[log] 상한 포인트 : {max_time_point}")
             score_info_dto = ScoreInfoDTO(
                 id=login_dto.peer_id, quiz_dvcd=QUIZ_DVCD_ROOM_QUIZ, company_dvcd=login_dto.argv_company_dvcd, score=0)
             bf_exp_score = self.score_mgr.get_exp_score(score_info_dto)
