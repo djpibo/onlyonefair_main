@@ -14,6 +14,7 @@ class CommonUtil:
 
     @staticmethod
     def get_max_time_by_company_dvcd(company_dvcd):
+        print(f"[log] company_dvcd = {company_dvcd}")
         return MAX_TIME_POINT_BIG if company_dvcd in SMALL_ROOM_COMPANY else MAX_TIME_POINT_SMALL
 
     @staticmethod
