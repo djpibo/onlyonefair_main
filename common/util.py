@@ -32,8 +32,7 @@ class ScoreUtil:
 
     @staticmethod
     def calculate_entrance_score(target_time):
-        current_time = datetime.now(ZoneInfo('Asia/Seoul'))
-        time_difference = int(current_time.timestamp() - target_time.timestamp())
+        time_difference = int(datetime.now(ZoneInfo('Asia/Seoul')).timestamp() - target_time.timestamp())
         return time_difference * TIME_POINT_PER_SECOND
 
     @staticmethod
@@ -50,7 +49,7 @@ class ScoreUtil:
         print(f"[log] 각 사 최소 시간 {CommonUtil.get_min_time_by_company_dvcd(response.company_dvcd)}")
 
         return (ScoreUtil.calculate_entrance_score(response.created_at)
-                < CommonUtil.get_min_time_by_company_dvcd(response.company_dvcd))
+                > CommonUtil.get_min_time_by_company_dvcd(response.company_dvcd))
 
 class MapperUtil:
     def __init__(self):

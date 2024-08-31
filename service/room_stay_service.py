@@ -53,6 +53,16 @@ class EnterMgr:
     def get_latest_exit(self, login_dto):
         return self.entrance_repo.check_exit_to_entrance_info(login_dto.peer_id, login_dto.argv_company_dvcd)
 
+    def validate_if_full(self, login_dto):
+        response = self.score_repo.get_exp_score(
+            ScoreInfoDTO(id=login_dto.peer_id,
+                         quiz_dvcd=QUIZ_DVCD_NFC_EXIST_TIME,
+                         company_dvcd=login_dto.argv_company_dvcd,
+                         score=99))
+        bf_exp_score = sum(item['score'] for item in response)
+        return bf_exp_score >= CommonUtil.get_max_time_by_company_dvcd(login_dto.argv_company_dvcd)
+
+
 class ExitMgr:
     def __init__(self
                  , entrance_repo: EntranceRepository):
@@ -78,8 +88,8 @@ class ScoreMgr:
     def set_score(self, score_dto):
         self.score_repo.update_nfc_exist_time_score(score_dto)
 
-    def get_current_score(self, login_dto):
-        score_info: ScoreInfoDTO = self.score_repo.get_user_current_score(login_dto.peer_id)
+    def get_current_point(self, login_dto):
+        score_info: ScoreInfoDTO = self.score_repo.get_user_current_point(login_dto.peer_id)
         if score_info is None:
             return 0
         return sum(item['score'] for item in score_info)
@@ -89,9 +99,7 @@ class ScoreMgr:
 
     def get_exp_score(self, score_dto:ScoreInfoDTO):
         score_info = self.score_repo.get_exp_score(score_dto)
-        print(f"[log] 사별, 누적 스코어 : {score_info}")
         return sum(item['score'] for item in score_info)
-
 
     def get_total_used_score(self, peer_id):
         consume_info: ConsumeInfoDTO = self.score_repo.get_total_used_score(peer_id)

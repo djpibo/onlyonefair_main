@@ -1,30 +1,31 @@
-import sys
+from flask import Flask, render_template
+from flask_socketio import SocketIO, emit
 
 from injector import Injector
 from command import Commander
 from inject_module import ChungMuro
 
-def main():
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'secret!'
+socketio = SocketIO(app, cors_allowed_origins="*")  # CORS 설정
 
-    # Injector(DI) 설정
-    injector = Injector([ChungMuro()])
-    commander = injector.get(Commander)
+injector = Injector([ChungMuro()])
+commander = injector.get(Commander)
 
-    if len(sys.argv) == 1: # 알바생을 위한 포인트 차감
-        commander.point_consumer()
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-    if len(sys.argv) == 2: # 구글 시트 연동 배치 수행
-        commander.start_sheet_data_batch()
+@socketio.on('nfc_data')
+def handle_nfc_data(response):
+    print("NFC 데이터 수신:", response)
+    commander.start_card_polling(response['data'])
+    emit('nfc_data', response, broadcast=True)
 
-    if len(sys.argv) == 3: # 각 클래스 입장
-        commander.start_nfc_polling(sys.argv)
-
-    if len(sys.argv) == 4: # 강제 종료
-        commander.start_key_polling(sys.argv)
-
-    if len(sys.argv) == 5: # 강제 종료
-        commander.force_exit()
-
+@socketio.on('company_enter')
+def handle_nfc_data(data):
+    print("회사, 입장구분코드:", data)
+    emit('company_enter', data, broadcast=True)
 
 if __name__ == "__main__":
-    main()
+    socketio.run(app, debug=True, allow_unsafe_werkzeug=True)

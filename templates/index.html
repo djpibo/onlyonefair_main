@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFC 데이터</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1 id="page-title">NFC 데이터</h1>
+        <div id="nfc-data" class="nfc-data">대기 중...</div>
+    </div>
+
+    <script>
+        // Socket.IO 클라이언트 연결
+        const socket = io();
+
+        // 서버로부터 'nfc_data' 이벤트를 수신했을 때 실행되는 함수
+        socket.on('nfc_data', function(data) {
+            // 제목 변경
+            document.getElementById('page-title').innerText = 'NFC 데이터 수신 완료';
+
+            // 수신된 데이터를 HTML 요소에 표시
+            document.getElementById('nfc-data').innerText = `NFC 데이터: ${data.data}`;
+        });
+    </script>
+</body>
+</html>

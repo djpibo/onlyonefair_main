@@ -1,6 +1,5 @@
 import math
 import time
-from datetime import datetime
 
 from api.supabase.model.common import LoginDTO
 from api.supabase.model.point import ConsumeInfoDTO
@@ -8,7 +7,8 @@ from api.supabase.model.presentation import ScreenDTO
 from api.supabase.model.quiz import ScoreInfoDTO
 from common.constants import *
 from common.util import ScoreUtil, CommonUtil
-from layout import Euljiro
+from config.connect import connect_redis
+from service.notify_service import ScreenMgr
 from service.batch_score import BatchMgr
 from service.common_service import CommonMgr
 from service.consume_point import PointMgr
@@ -16,87 +16,89 @@ from service.nfc_service import NfcService
 from service.room_stay_service import EnterMgr, ExitMgr, ScoreMgr
 
 class Commander:
-    def __init__(self, enter_mgr:EnterMgr, exit_mgr:ExitMgr, score_mgr:ScoreMgr, common_mgr:CommonMgr, nfc_mgr:NfcService,
-                 eul:Euljiro, point_mgr:PointMgr, batch_mgr:BatchMgr):
+    def __init__(self, enter_mgr: EnterMgr, exit_mgr: ExitMgr, score_mgr: ScoreMgr, common_mgr: CommonMgr,
+                 nfc_mgr: NfcService, screen_mgr: ScreenMgr, point_mgr: PointMgr, batch_mgr: BatchMgr):
         self.nfc_mgr = nfc_mgr
         self.exit_mgr = exit_mgr
         self.enter_mgr = enter_mgr
         self.score_mgr = score_mgr
         self.common_mgr = common_mgr
-        self.eul = eul
+        self.screen_mgr = screen_mgr
         self.point_mgr = point_mgr
         self.batch_mgr = batch_mgr
+        self.redis = connect_redis()
 
-    def start_nfc_polling(self, argv_arr):
-        print(argv_arr)
-        # Streamlit 앱 UI 구성
-        while True:
-            nfc_uid = self.nfc_mgr.nfc_receiver()
-            self.common_mgr.count_up(nfc_uid)
-            if nfc_uid is not None:
+    def start_card_polling(self, nfc_uid):
 
-                comp_dvcd = self.common_mgr.get_cmn_cd("회사명", argv_arr[1])
-                enter_dvcd = self.common_mgr.get_cmn_cd("입퇴장구분코드", argv_arr[2])
-                peer_name = self.common_mgr.get_peer_name(nfc_uid)
-                login_dto: LoginDTO = self.common_mgr.get_login_info(nfc_uid, comp_dvcd, peer_name)
+        # 각 사 교육지도자인 경우, skip
+        if self.common_mgr.validate_teacher(nfc_uid): return
+        # 최초 태그 및 특정 순번 태그 인원 식별
+        self.common_mgr.count_up(nfc_uid)
 
-                if enter_dvcd == ENTER_DVCD_ENTRANCE:
-                    self.validate_enter(login_dto) # 입장 검증
-                    self.process_enter(login_dto) # 입장 처리
-                elif enter_dvcd == ENTER_DVCD_EXIT:
-                    self.process_exit(login_dto) # 퇴장 처리
-                else:
-                    self.point_consumer(login_dto)
+        argv1 = self.redis.get('company').decode('utf-8')
+        argv2 = self.redis.get('enter').decode('utf-8')
 
-            time.sleep(1)
+        if nfc_uid is not None:
+            login_dto = self.common_mgr.login_setter(argv1, argv2, nfc_uid)
+            if login_dto.enter_dvcd == ENTER_DVCD_ENTRANCE:
+                self.validate_enter(login_dto)  # 입장 검증
+                self.process_enter(login_dto)  # 입장 처리
+            elif login_dto.enter_dvcd == ENTER_DVCD_EXIT:
+                self.process_exit(login_dto)  # 퇴장 처리
+            else:
+                self.point_consumer(login_dto)
 
     def validate_enter(self, login_dto:LoginDTO):
-        latest_enter_info = self.enter_mgr.get_unchecked_exit(login_dto)
-        if latest_enter_info is not None:  # 퇴장을 찍고 오지 않은 경우 이전 부스 입장 내역이 남아 있다.
-            if ScoreUtil.check_min_stay_time(latest_enter_info):  # 시간이 모자란 경우
-                # 다시 원래 부스로 돌아가기 or 0점 처리 입장
-                pass
-                # TODO GUI에서 선택값 받기
+        user_not_checked_exit = self.enter_mgr.get_unchecked_exit(login_dto)
+        if user_not_checked_exit is not None:  # 퇴장을 찍고 오지 않은 경우 이전 부스 입장 내역이 남아 있다
+            score = CommonUtil.get_min_time_by_company_dvcd(
+                user_not_checked_exit.company_dvcd) if ScoreUtil.check_min_stay_time(user_not_checked_exit) else 0
 
-            else:  # 그래도 시간은 채운 경우, 퇴장 처리 후 최소 점수로 입장
-                # 1-퇴장 처리(입장(또는 재입장) => True, 퇴장 insert)
-                self.exit_mgr.set_enter_exit(latest_enter_info)
-                self.exit_mgr.set_exit_true(latest_enter_info)
-                # 2-최소 점수 받기 (그리고 입장)
-                set_to_score_info = ScoreInfoDTO(
-                    id=login_dto.peer_id,
-                    quiz_dvcd=QUIZ_DVCD_NFC_EXIST_TIME,
-                    company_dvcd=latest_enter_info.company_dvcd,
-                    score=CommonUtil.get_min_time_by_company_dvcd(latest_enter_info.company_dvcd)
-                )
-                self.score_mgr.set_score(set_to_score_info)
+            # 1-퇴장 처리(입장(또는 재입장) => True, 퇴장 insert)
+            self.exit_mgr.set_enter_exit(user_not_checked_exit)
+            self.exit_mgr.set_exit_true(user_not_checked_exit)
+            # 2-최소 점수 받기 (그리고 입장)
+            set_to_score_info = ScoreInfoDTO(
+                id=login_dto.peer_id,
+                quiz_dvcd=QUIZ_DVCD_NFC_EXIST_TIME,
+                company_dvcd=user_not_checked_exit.company_dvcd,
+                score=score
+            )
+            self.score_mgr.set_score(set_to_score_info)
 
-                # TODO GUI
-                acc_score = self.score_mgr.get_current_score(login_dto)
-                used_score = self.point_mgr.get_used_score(login_dto)
-                current_score = CommonUtil.get_min_time_by_company_dvcd(latest_enter_info.company_dvcd)
-                comment = (f"{self.common_mgr.get_common_desc(latest_enter_info.company_dvcd)}은/는"
-                           f" 최소 점수({current_score})로 퇴장 처리됐습니다.")
-                scr_dto = ScreenDTO(peer_name=login_dto.peer_name, enter_dvcd_kor="입장", used_score=used_score,
-                                    acc_score=acc_score+current_score, current_score=current_score, comment=comment)
-                Euljiro.draw_whole(self.eul, scr_dto)
+            # GUI case 1-퇴실 안찍고 입장한 경우
+            acc_score = self.score_mgr.get_current_point(login_dto)
+            used_score = self.point_mgr.get_used_point(login_dto)
+            current_score = score
+            comment = (f"{self.common_mgr.get_common_desc(user_not_checked_exit.company_dvcd)}은/는"
+                       f" 최소 점수({current_score})로 퇴장 처리됐습니다.")
+            scr_dto = ScreenDTO(peer_name=login_dto.peer_name, enter_dvcd_kor="입장", used_score=used_score,
+                                acc_score=acc_score, current_score=current_score, comment=comment)
+            ScreenMgr.draw_whole(self.screen_mgr, scr_dto)
 
-                print(f"[log] 최소 점수로 입장 처리. 클래스명: "
-                      f"{self.common_mgr.get_common_desc(latest_enter_info.company_dvcd)}")
+            print(f"[log] 최소 점수로 입장 처리. 클래스명: "
+                  f"{self.common_mgr.get_common_desc(user_not_checked_exit.company_dvcd)}")
 
     def process_enter(self, login_dto:LoginDTO):
         reenter_enter_info = self.enter_mgr.check_exit_before(login_dto)
 
         if reenter_enter_info is not None:  # 퇴장 여부가 있다는 것은 재입장이라는 뜻
             print("[log] 재입장 처리 진행")
-            acc_score = self.score_mgr.get_current_score(login_dto)
-            used_score = self.point_mgr.get_used_score(login_dto)
-            current_score = 0
-            comment = (f"재입장인 경우, 입장 포인트는 없습니다.")
-            scr_dto = ScreenDTO(peer_name=login_dto.peer_name, enter_dvcd_kor="재입장", used_score=used_score,
-                                acc_score=acc_score + current_score, current_score=current_score, comment=comment)
-            Euljiro.draw_whole(self.eul, scr_dto)
             self.enter_mgr.set_to_reenter(reenter_enter_info)
+
+            # 최대 포인트 충족 검증
+            if self.enter_mgr.validate_if_full(login_dto):
+                comment = (f"{self.common_mgr.get_common_desc(login_dto.argv_company_dvcd)} 클래스에서<br>"
+                           f"획득 가능한 포인트는 모두 채우셨습니다<br><br>다른 클래스를 방문해보시는 것은 어떨까요?")
+            else:
+                comment = (f"재입장인 경우, 입장 포인트는 없습니다.")
+
+            acc_score = self.score_mgr.get_current_point(login_dto)
+            used_score = self.point_mgr.get_used_point(login_dto)
+            scr_dto = ScreenDTO(peer_name=login_dto.peer_name, enter_dvcd_kor="재입장", used_score=used_score,
+                                acc_score=acc_score, current_score=0, comment=comment)
+            ScreenMgr.draw_whole(self.screen_mgr, scr_dto)
+
         # TODO N차 재입장 > 순번 부여로 해결 완료
 
         else:  # 최초 입장
@@ -104,79 +106,151 @@ class Commander:
             # 입장 포인트 부여
             self.score_mgr.set_entrance_point(login_dto)
             self.enter_mgr.set_to_enter(login_dto)
-            acc_score = self.score_mgr.get_current_score(login_dto)
-            used_score = self.point_mgr.get_used_score(login_dto)
+            acc_score = self.score_mgr.get_current_point(login_dto)
+            used_score = self.point_mgr.get_used_point(login_dto)
             current_score = 50
             comment = (f"입장 포인트 50점 획득")
             scr_dto = ScreenDTO(peer_name=login_dto.peer_name, enter_dvcd_kor="입장", used_score=used_score,
                                 acc_score=acc_score, current_score=current_score, comment=comment)
-            Euljiro.draw_whole(self.eul, scr_dto)
+            ScreenMgr.draw_whole(self.screen_mgr, scr_dto)
 
-    def process_exit(self, login_dto:LoginDTO):
-        latest_enter_info = self.enter_mgr.get_latest_enter(login_dto)
-        # 입장 안 찍고 퇴장 먼저 하는 경우
-        if latest_enter_info is None:
-            # TODO 단순히 여러번 찍는 경우엔 문구를 어떻게 처리? 시간 간격을 주기(연속 거래 방지) > 테스트 필요
+    def validate_exit(self, recent_enter_info, login_dto):
+
+        # 검증 : 입장 안 찍고 퇴장 먼저 하는 경우
+        if recent_enter_info is None:
+            comment = ""
             if CommonUtil.is_less_than_one_minute_interval(self.enter_mgr.get_latest_exit(login_dto).created_at):
                 print(f"[log] 연속 거래 방지")
+                comment = (f"{login_dto.peer_name}님은 이미 퇴장 처리 되었습니다"
+                           f"<br> 다른 클래스를 방문해보는 것은 어떨까요?")
+
             else:
                 print("[error] 입장 먼저 하세요.")
-                acc_score = self.score_mgr.get_current_score(login_dto)
-                used_score = self.point_mgr.get_used_score(login_dto)
-                current_score = 0
-                comment = f"{login_dto.peer_name}님! 입실 태그 먼저 찍으세요~"
-                scr_dto = ScreenDTO(peer_name=login_dto.peer_name, enter_dvcd_kor="비정상 접근(퇴장)", used=used_score,
-                                    acc_score=acc_score + current_score, current_score=current_score, comment=comment)
-                Euljiro.draw_whole(self.eul, scr_dto)
+                comment = f"{login_dto.peer_name}님 입실 태그 먼저 하고 오세요"
 
-        # 정상 퇴장 진행
+            acc_score = self.score_mgr.get_current_point(login_dto)
+            used_score = self.point_mgr.get_used_point(login_dto)
+            scr_dto = ScreenDTO(peer_name=login_dto.peer_name, enter_dvcd_kor="비정상 접근", used=used_score,
+                                acc_score=acc_score, current_score=0, comment=comment)
+            ScreenMgr.draw_whole(self.screen_mgr, scr_dto)
+
+            return True
+
         else:
+            print(f"[log] 제 2 검증")
+            # 검증 : 입장 클래스와 퇴장 클래스가 다른 경우
+            if recent_enter_info.company_dvcd != login_dto.argv_company_dvcd:
+                print("[error] 입장 클래스와 퇴장 클래스가 다른 경우 ")
+                acc_score = self.score_mgr.get_current_point(login_dto)
+                used_score = self.point_mgr.get_used_point(login_dto)
+                comment = (f"{login_dto.peer_name}님"
+                           f"<br>{self.common_mgr.get_common_desc(recent_enter_info.company_dvcd)}에서 퇴실 처리를 하지 않았습니다."
+                           f"<br> 현재 클래스에서 입장 태그를 찍어도 자동으로 퇴실 처리됩니다. "
+                           f"<br> (❗️체류 시간에 따른 획득 포인트 불이익 발생 가능)")
+                scr_dto = ScreenDTO(peer_name=login_dto.peer_name, enter_dvcd_kor="비정상 접근(퇴장)", used=used_score,
+                                    acc_score=acc_score, current_score=0, comment=comment)
+                ScreenMgr.draw_whole(self.screen_mgr, scr_dto)
+                return True
 
-            # TODO 최소 시간 미달시 알림 + 재입장인 경우에는 pass > 테스트를 위해 열어둠
-            score = ScoreUtil.calculate_entrance_score(latest_enter_info.created_at)
+            else:
+                print(f"[log] 제 3 검증")
+                # 체류 시간 포인트 계산 (체류 시간 : 현재 시각 - 최근 입장 시각)
+                current_exp_point = ScoreUtil.calculate_entrance_score(recent_enter_info.created_at)
 
-            # 최초 입장인 경우, 최소 잔류 시간 검증
-            if latest_enter_info.enter_dvcd == ENTER_DVCD_ENTRANCE:
-                min_time_point = CommonUtil.get_min_time_by_company_dvcd(login_dto.argv_company_dvcd)
-                if min_time_point is not None and score < min_time_point:
-                    # TODO GUI (퇴장 허용 or 0점 퇴장)
-                    Euljiro.show_text(f"{login_dto.peer_name}님! 아직 최소 시간을 채우지 못했습니다."
-                                      f" {format(ScoreUtil.calculate_time_by_score(min_time_point, score))}가 더 필요해요~")
-                    print("[error] 최소 시간 미달입니다. {} 필요"
-                          .format(ScoreUtil.calculate_time_by_score(min_time_point, score)))
+                # 최초 입장에 대한 퇴장인 경우, 최소 잔류 시간 검증
+                if recent_enter_info.enter_dvcd == ENTER_DVCD_ENTRANCE:
 
-            # 상한 시간 지정
-            max_time_point = CommonUtil.get_max_time_by_company_dvcd(login_dto.argv_company_dvcd)
-            print(f"[log] 상한 포인트 : {max_time_point}")
-            score_info_dto = ScoreInfoDTO(
-                id=login_dto.peer_id, quiz_dvcd=QUIZ_DVCD_ROOM_QUIZ, company_dvcd=login_dto.argv_company_dvcd, score=0)
-            bf_exp_score = self.score_mgr.get_exp_score(score_info_dto)
-            if score > max_time_point - bf_exp_score:
-                score = max_time_point
+                    print(f"[log] 제 4 검증 {recent_enter_info.enter_dvcd}")
 
-            # TODO 퇴장 점수 반영 > 반영 완료.
-            stay_score_info = ScoreInfoDTO(
-                id=login_dto.peer_id,
-                quiz_dvcd=QUIZ_DVCD_NFC_EXIST_TIME,
-                company_dvcd=login_dto.argv_company_dvcd,
-                score=score
-            )
-            self.score_mgr.set_score(stay_score_info)
+                    # 클래스별 최소 체류 시간 확인
+                    min_point = CommonUtil.get_min_time_by_company_dvcd(login_dto.argv_company_dvcd)
 
-            # TODO 재입장 체류시간 로직 개발 > 완료 (일련번호 칼럼 추가)
-            print(f"[log] latest_enter_info = {latest_enter_info}")
+                    # 클래스별 최소 체류 시간을 충족하지 못한 경우, 1회에 한해 퇴장 차단
+                    if current_exp_point < min_point:
 
-            self.exit_mgr.set_enter_exit(latest_enter_info)  # latest 입장 > 퇴장 여부 True
-            self.exit_mgr.set_exit_true(latest_enter_info)  # 실제 퇴장 insert
+                        print(f"[log] 제 5 검증 {current_exp_point} / {min_point}")
+                        value = self.redis.get(login_dto.peer_id)
+                        if value is None:
+                            print(f"[log] 제 6 검증 {value}")
+                            self.redis.set(login_dto.peer_id, 0)
 
-            acc_score = self.score_mgr.get_current_score(login_dto)
-            used_score = self.point_mgr.get_used_score(login_dto)
-            current_score = score
-            comment = f"입실시간 기록완료 🪄 받은 포인트 : {int(current_score)}"
-            scr_dto = ScreenDTO(peer_name=login_dto.peer_name, enter_dvcd_kor="퇴장", used_score=used_score,
-                                acc_score=acc_score + current_score, current_score=current_score, comment=comment)
-            Euljiro.draw_whole(self.eul, scr_dto)
-            print("[log] 퇴장 처리 진행")
+                            acc_score = self.score_mgr.get_current_point(login_dto)
+                            used_score = self.point_mgr.get_used_point(login_dto)
+                            comment = (
+                                f"{login_dto.peer_name}님 퇴실 시간이 "
+                                f"{format(ScoreUtil.calculate_time_by_score(min_point, current_exp_point))} 부족합니다."
+                                f"<br> 그래도 퇴실하시려면 한 번 더 찍으세요")
+                            scr_dto = ScreenDTO(peer_name=login_dto.peer_name, enter_dvcd_kor="퇴실 시간 미충족", used=used_score,
+                                                acc_score=acc_score, current_score=0,
+                                                comment=comment)
+                            ScreenMgr.draw_whole(self.screen_mgr, scr_dto)
+
+    def process_exit(self, login_dto:LoginDTO):
+        recent_enter_info = self.enter_mgr.get_latest_enter(login_dto)
+
+        # 퇴장 처리가 발생하지 않는 case
+        if self.validate_exit(recent_enter_info, login_dto):
+            return
+
+        # 체류 시간 계산
+        current_exp_point = ScoreUtil.calculate_entrance_score(recent_enter_info.created_at)
+        # 각 사별 상한 포인트
+        max_point = CommonUtil.get_max_time_by_company_dvcd(login_dto.argv_company_dvcd)
+
+        # 상한 시간 검증을 위한 이전 누적 시간 집계
+        score_info_dto = ScoreInfoDTO(
+            id=login_dto.peer_id, quiz_dvcd=QUIZ_DVCD_NFC_EXIST_TIME, company_dvcd=login_dto.argv_company_dvcd, score=0)
+        bf_exp_point = self.score_mgr.get_exp_score(score_info_dto)
+
+        # 동적 분기 처리를 위한 변수 초기화
+        update_point = 0
+        screen_point = 0
+        _comment = ""
+
+        # 이미 만점으로 입장한 경우
+        if bf_exp_point >= max_point:
+            screen_point = 0
+            update_point = max_point
+            _comment = (f"{self.common_mgr.get_common_desc(login_dto.argv_company_dvcd)} 클래스에서<br>"
+                        f"획득 가능한 포인트는 모두 채우셨습니다<br><br>다른 클래스를 방문해보시는 것은 어떨까요?")
+
+        # 만점을 넘은 경우, 상한 포인트로 제한
+        elif current_exp_point > (max_point - bf_exp_point):
+            screen_point = max_point - bf_exp_point
+            update_point = max_point
+            _comment = (f"입실시간 기록완료 🪄 받은 포인트 : {int(current_exp_point)}"
+                        f"{self.common_mgr.get_common_desc(login_dto.argv_company_dvcd)} 클래스에서<br>"
+                        f"획득 가능한 포인트는 모두 채우셨습니다")
+
+        # 정상 시간 범위
+        else:
+            screen_point = current_exp_point
+            update_point = current_exp_point
+
+            # 강제 퇴실 동의 받고 온 경우, 0점 처리
+            if self.redis.get(login_dto.peer_id) == 0:
+                screen_point = 0
+                update_point = 0
+                self.redis.delete(login_dto.peer_id)
+
+            _comment = f"입실시간 기록완료 🪄 받은 포인트 : {int(current_exp_point)}"
+
+        print("[log] 퇴장 처리 진행")
+        self.exit_mgr.set_enter_exit(recent_enter_info)  # latest 입장 > 퇴장 여부 True
+        self.exit_mgr.set_exit_true(recent_enter_info)  # 실제 퇴장 insert
+        stay_score_info = ScoreInfoDTO(
+            id=login_dto.peer_id,
+            quiz_dvcd=QUIZ_DVCD_NFC_EXIST_TIME,
+            company_dvcd=login_dto.argv_company_dvcd,
+            score=update_point
+        )
+        self.score_mgr.set_score(stay_score_info)
+
+        acc_score = self.score_mgr.get_current_point(login_dto)
+        used_score = self.point_mgr.get_used_point(login_dto)
+        scr_dto = ScreenDTO(peer_name=login_dto.peer_name, enter_dvcd_kor="퇴장", used_score=used_score,
+                            acc_score=acc_score, current_score=screen_point, comment=_comment)
+        ScreenMgr.draw_whole(self.screen_mgr, scr_dto)
 
     def start_sheet_data_batch(self):
         self.score_mgr.upload_data_to_sheet()
@@ -191,7 +265,7 @@ class Commander:
             min_time_point = CommonUtil.get_min_time_by_company_dvcd(latest_enter_info.company_dvcd)
             if min_time_point is not None and score < min_time_point:
                 # TODO GUI (퇴장 허용 or 0점 퇴장)
-                Euljiro.show_text(f"{login_dto.peer_name}님! 아직 최소 시간을 채우지 못했습니다."
+                ScreenMgr.show_text(f"{login_dto.peer_name}님! 아직 최소 시간을 채우지 못했습니다."
                                   f" {format(ScoreUtil.calculate_time_by_score(min_time_point, score))}가 더 필요해요~")
                 print("[error] 최소 시간 미달입니다. {} 필요"
                       .format(ScoreUtil.calculate_time_by_score(min_time_point, score)))
@@ -211,7 +285,7 @@ class Commander:
         self.score_mgr.set_score(stay_score_info)
 
         # TODO 화면
-        # Euljiro.show_text(f"{login_dto.peer_name}님, 퇴장 완료! {score} 포인트 획득!")
+        # ScreenMgr.show_text(f"{login_dto.peer_name}님, 퇴장 완료! {score} 포인트 획득!")
         print("[log] 퇴장 처리 진행")
         # TODO 재입장 체류시간 로직 개발 > 완료 (일련번호 칼럼 추가)
         print(f"[log] latest_enter_info = {latest_enter_info}")
@@ -227,7 +301,7 @@ class Commander:
             print(f"[log] 연속 거래 방지")
 
         # 2 누적 포인트에 기반해서 계산
-        current_point = self.score_mgr.get_current_score(LoginDTO(peer_id=consumer, argv_company_dvcd=99))
+        current_point = self.score_mgr.get_current_point(LoginDTO(peer_id=consumer, argv_company_dvcd=99))
         current_count = math.floor(current_point / 800)
 
         # 2-1 조건 검증
@@ -245,7 +319,7 @@ class Commander:
             print(f"[log] 포인트가 부족합니다 :<")
 
     def start_key_polling(self, argv_arr):
-        key_id = self.eul.input_id()
+        key_id = self.screen_mgr.input_id()
         comp_dvcd = self.common_mgr.get_cmn_cd("회사명", argv_arr[1])
         enter_dvcd = self.common_mgr.get_cmn_cd("입퇴장구분코드", argv_arr[2])
         peer_name = self.common_mgr.get_peer_name_by_id(key_id)

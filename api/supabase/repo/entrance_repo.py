@@ -78,8 +78,7 @@ class EntranceRepository:
         )
         return MapperUtil.single_mapper(response, EntranceInfoDTO)
 
-    # 입장 여부 확인용 - 1건이라도 있으면 pass
-    # 다른 부스에서 퇴장 안하고, 해당 부스에서 퇴장하는 경우에도 필터링하기 -> NO
+    # 가장 최근에 입장한 정보를 가져오기(시간 계산) + 퇴장-검증에서도 사용
     def check_entered_to_entrance_info(self, peer_id, company_dvcd):
         response = (
             self.supabase.table("Entrance_Info")

@@ -2,7 +2,7 @@ from api.supabase.model.point import ConsumeInfoDTO, OliveInfoDTO
 from api.supabase.model.quiz import ScoreInfoDTO, RankDTO
 from common import constants
 from common.constants import *
-from common.util import MapperUtil
+from common.util import MapperUtil, CommonUtil
 from config.connect import connect_supabase
 
 
@@ -24,7 +24,7 @@ class ScoreRepository:
 
         self.supabase.table("Score_Info").upsert(data_to_upsert, ignore_duplicates=True).execute()
 
-    def get_user_current_score(self, peer_id):
+    def get_user_current_point(self, peer_id):
         response = (
             self.supabase.table("Score_Info")
             .select("*")
@@ -65,10 +65,12 @@ class ScoreRepository:
             .execute()
         )
         before = MapperUtil.single_mapper(response, ScoreInfoDTO)
+        # 최초 퇴장인 경우
         if before is None:
             new_score = source.score
+        # N차 퇴장인 경우엔 합산
         else:
-            new_score = source.score + before.score
+            new_score = min(source.score + before.score, CommonUtil.get_max_time_by_company_dvcd(source.company_dvcd))
         query = (
             self.supabase.table("Score_Info")
             .upsert(
@@ -150,8 +152,10 @@ class ScoreRepository:
                 .eq("quiz_dvcd", score_dto.quiz_dvcd)
                 .execute()).data
 
-    def get_used_score_by_id(self, peer_id):
-        return (self.supabase.table("Consume_Info")
-                .select("used_score")
-                .eq("id", peer_id)
-                .execute()).data
+    def get_used_point_by_id(self, peer_id):
+        response = self.supabase.table("Consume_Info").select("used_score").eq("id", peer_id).execute()
+        if response.data is None:
+            return None
+        return response.data
+
+

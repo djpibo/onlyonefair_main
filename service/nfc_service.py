@@ -2,10 +2,26 @@ import time
 
 from smartcard.System import readers
 from smartcard.util import toHexString
+from smartcard.CardMonitoring import CardMonitor, CardObserver
+
+class PrintObserver(CardObserver):
+    def update(self, observable, actions):
+        (added_cards, removed_cards) = actions
+        for card in added_cards:
+            print("+Inserted: ", toHexString(card.atr))
+        for card in removed_cards:
+            print("-Removed: ", toHexString(card.atr))
 
 class NfcService:
     def __init__(self):
         self.reader = readers()
+        self.card_monitor = CardMonitor()
+        self.card_observer = PrintObserver()
+
+    def card_reader(self):
+        self.card_monitor.addObserver(self.card_observer)
+        time.sleep(60 * 60 * 12)
+        self.card_monitor.deleteObserver(self.card_observer)
 
     def nfc_reader(self):
         r = self.reader

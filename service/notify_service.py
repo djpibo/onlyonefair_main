@@ -1,8 +1,4 @@
-import os
-import time
-from datetime import datetime
 from pathlib import Path
-from xmlrpc.client import DateTime
 
 from PIL import Image
 
@@ -12,7 +8,7 @@ import plotly.graph_objs as go
 from api.supabase.model.presentation import ScreenDTO
 from common.constants import MAX_TOTAL_POINT
 
-class Euljiro:
+class ScreenMgr:
 
     def __init__(self):
         self.st = st
@@ -194,6 +190,19 @@ class Euljiro:
         return None
 
     def input_id(self):
-        self.clean_whole()
-        # 세션 상태를 관리하기 위해 st.session_state 사용
-        return self.placeholder.text_input("사번을 입력하세요:", key="emp_id_key")
+        # 동적 요소를 위해 empty() 사용
+        self.placeholder = st.empty()
+
+        with self.placeholder:
+            st.title("사번 정보 조회")
+
+            # 동적 요소를 위해 empty() 사용
+            input_placeholder = st.empty()
+
+            # 엔터키 입력 여부를 확인하기 위해 session_state 사용
+            if 'submitted' not in st.session_state:
+                st.session_state.submitted = False
+
+            with input_placeholder:
+                # 사용자 입력 받기
+                return st.text_input("사번을 입력하세요:", key="emp_id_input")

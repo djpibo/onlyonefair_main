@@ -9,6 +9,7 @@ class PeerInfoDTO(BaseModel):
     company: str
     name: str
     nfc_id: str
+    grade: Optional[int] = 0
 
     class Config:
         from_attributes = True

@@ -1,7 +1,5 @@
 from api.supabase.model.common import LoginDTO
-from api.supabase.model.nfc import EntranceInfoDTO, CountInfoDTO
-from api.supabase.model.point import OliveInfoDTO
-from api.supabase.model.quiz import ScoreInfoDTO
+from api.supabase.model.nfc import CountInfoDTO
 from api.supabase.repo.common_repo import CommonRepository
 from api.supabase.repo.peer_repo import PeerRepository
 
@@ -25,12 +23,18 @@ class CommonMgr:
     def get_common_desc(self, company_dvcd):
         return self.common_repo.get_common_by_cmn_id(company_dvcd).cmn_desc
 
-    def get_login_info(self, nfc_uid, company_dvcd, peer_name):
-        peer_id = self.get_peer_id(nfc_uid)
-        return LoginDTO(peer_id=peer_id, argv_company_dvcd=company_dvcd, peer_name=peer_name)
-
     def count_up(self, nfc_uid):
         self.common_repo.insert_tag_count(CountInfoDTO(id=self.get_peer_id(nfc_uid)))
 
-    def olive_count_up(self, olive_info:OliveInfoDTO):
-        self.common_repo.upsert_olive_count(olive_info)
+    def validate_teacher(self, nfc_id):
+        grade = self.peer_repo.check_if_teacher(nfc_id).grade
+        if grade == 1:
+            return True
+        return False
+
+    def login_setter(self, argv1, argv2, nfc_uid):
+        comp_dvcd = self.get_cmn_cd("회사명", argv1)
+        enter_dvcd = self.get_cmn_cd("입퇴장구분코드", argv2)
+        peer_name = self.get_peer_name(nfc_uid)
+        peer_id = self.get_peer_id(nfc_uid)
+        return LoginDTO(peer_id=peer_id, argv_company_dvcd=comp_dvcd, peer_name=peer_name, enter_dvcd=enter_dvcd)

@@ -7,7 +7,7 @@ class ScoreInfoDTO(BaseModel):
     created_at: Optional[datetime] = None
     quiz_dvcd: int
     company_dvcd: int
-    score: float = 0
+    score: float
 
     class Config:
         from_attributes = True

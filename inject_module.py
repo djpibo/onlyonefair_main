@@ -6,7 +6,7 @@ from api.supabase.repo.entrance_repo import EntranceRepository
 from api.supabase.repo.peer_repo import PeerRepository
 from api.supabase.repo.score_repo import ScoreRepository
 from command import Commander
-from layout import Euljiro
+from service.notify_service import ScreenMgr
 from service.batch_score import BatchMgr
 from service.common_service import CommonMgr
 from service.consume_point import PointMgr
@@ -67,15 +67,15 @@ class ChungMuro(Module):
 
     @provider
     def provide_command(self,
-                            enter_mgr: EnterMgr,
-                            exit_mgr:ExitMgr,
-                            score_mgr:ScoreMgr,
-                            common_mgr:CommonMgr,
-                            nfc_mgr:NfcService,
-                            eul:Euljiro,
-                            point_mgr:PointMgr,
-                            batch_mgr:BatchMgr
-                            ) -> Commander:
+                        enter_mgr: EnterMgr,
+                        exit_mgr:ExitMgr,
+                        score_mgr:ScoreMgr,
+                        common_mgr:CommonMgr,
+                        nfc_mgr:NfcService,
+                        eul:ScreenMgr,
+                        point_mgr:PointMgr,
+                        batch_mgr:BatchMgr
+                        ) -> Commander:
         return Commander(enter_mgr, exit_mgr, score_mgr, common_mgr, nfc_mgr, eul, point_mgr, batch_mgr)
 
 
