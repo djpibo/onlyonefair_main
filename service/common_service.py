@@ -1,5 +1,6 @@
 from api.supabase.model.common import LoginDTO
 from api.supabase.model.nfc import CountInfoDTO
+from api.supabase.model.presentation import ScreenDTO
 from api.supabase.repo.common_repo import CommonRepository
 from api.supabase.repo.peer_repo import PeerRepository
 
