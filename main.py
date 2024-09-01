@@ -30,10 +30,12 @@ def handle_nfc_data(response):
     # 클라이언트에 반환된 결과를 전송
     socketio.emit('polling_result', {
         'comment': scr_dto.comment,
-        'acc_score': scr_dto.acc_score,
-        'current_score': scr_dto.current_score,
-        'photo': scr_dto.used_score,
-        'peer': scr_dto.peer_name,
+        'acc_score': int(scr_dto.acc_score),
+        'current_score': int(scr_dto.current_score),
+        'photo': int((scr_dto.acc_score - scr_dto.used_score)/800),
+        'peer_name': scr_dto.peer_name,
+        'peer_company': scr_dto.peer_company,
+        'enter_dvcd': scr_dto.enter_dvcd_kor,
     })
 
 

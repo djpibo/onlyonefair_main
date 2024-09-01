@@ -10,7 +10,7 @@ socket.on('nfc_data', function(data) {
 socket.on('polling_result', function(data) {
     // 각 변수 값을 HTML 요소에 표시
     document.getElementById('comment').innerText = data.comment;
-    document.getElementById('title').innerText = data.peer;
+    document.getElementById('title').innerText = `${data.peer_company}\n ${data.peer_name}님, ${data.enter_dvcd}`;
     document.getElementById('photo').innerText = `사용가능한 촬영권 \n\n ${data.photo}`;
     document.getElementById('acc_score').innerText = `현재까지 받은 포인트\n\n ${data.acc_score} (+${data.current_score})`;
 

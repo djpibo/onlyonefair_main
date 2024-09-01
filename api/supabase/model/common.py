@@ -17,6 +17,7 @@ class LoginDTO(BaseModel):
     peer_id: int
     argv_company_dvcd: int
     peer_name: Optional[str] = None
+    peer_company: Optional[str] = None
     enter_dvcd: Optional[int] = None
 
     class Config:

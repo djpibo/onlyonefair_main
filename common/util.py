@@ -41,7 +41,7 @@ class ScoreUtil:
         print(remain_score)
         remain_time_sec = remain_score / TIME_POINT_PER_SECOND
         print(remain_time_sec)
-        return f"{int(remain_time_sec/60)}분 {remain_time_sec%60}초"
+        return f"{int(remain_time_sec/60)}분 {int(remain_time_sec%60)}초"
 
     @staticmethod
     def check_min_stay_time(response:EntranceInfoDTO):

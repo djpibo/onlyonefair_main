@@ -1,5 +1,4 @@
 import math
-import time
 
 from api.supabase.model.common import LoginDTO
 from api.supabase.model.point import ConsumeInfoDTO
@@ -83,7 +82,7 @@ class Commander:
             current_score = score
             comment = (f"{self.common_mgr.get_common_desc(user_not_checked_exit.company_dvcd)}은/는"
                        f" 최소 점수({current_score})로 퇴장 처리됐습니다.")
-            scr_dto = ScreenDTO(peer_name=login_dto.peer_name, used_score=used_score, acc_score=acc_score,
+            scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, used_score=used_score, acc_score=acc_score,
                                 enter_dvcd_kor="입장", current_score=current_score, comment=comment)
             # ScreenMgr.draw_whole(self.screen_mgr, scr_dto)
 
@@ -102,19 +101,17 @@ class Commander:
 
             # 최대 포인트 충족 검증
             if self.enter_mgr.validate_if_full(login_dto):
-                comment = (f"{self.common_mgr.get_common_desc(login_dto.argv_company_dvcd)} 클래스에서<br>"
-                           f"획득 가능한 포인트는 모두 채우셨습니다<br><br>다른 클래스를 방문해보시는 것은 어떨까요?")
+                comment = (f"{self.common_mgr.get_common_desc(login_dto.argv_company_dvcd)} 클래스에서\n"
+                           f"획득 가능한 포인트는 모두 채우셨습니다\n다른 클래스를 방문해보시는 것은 어떨까요?")
             else:
                 comment = (f"재입장인 경우, 입장 포인트는 없습니다.")
 
             acc_score = self.score_mgr.get_current_point(login_dto)
             used_score = self.point_mgr.get_used_point(login_dto)
-            scr_dto = ScreenDTO(peer_name=login_dto.peer_name, enter_dvcd_kor="재입장", used_score=used_score,
+            scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, enter_dvcd_kor="재입장", used_score=used_score,
                                 acc_score=acc_score, current_score=0, comment=comment)
             #ScreenMgr.draw_whole(self.screen_mgr, scr_dto)
             return scr_dto
-
-        # TODO N차 재입장 > 순번 부여로 해결 완료
 
         else:  # 최초 입장
             print("[log] 최초 입장 처리 진행")
@@ -125,7 +122,7 @@ class Commander:
             used_score = self.point_mgr.get_used_point(login_dto)
             current_score = 50
             comment = (f"입장 포인트 50점 획득")
-            scr_dto = ScreenDTO(peer_name=login_dto.peer_name, enter_dvcd_kor="입장", used_score=used_score,
+            scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, enter_dvcd_kor="입장", used_score=used_score,
                                 acc_score=acc_score, current_score=current_score, comment=comment)
             #ScreenMgr.draw_whole(self.screen_mgr, scr_dto)
 
@@ -139,7 +136,7 @@ class Commander:
             if CommonUtil.is_less_than_one_minute_interval(self.enter_mgr.get_latest_exit(login_dto).created_at):
                 print(f"[log] 연속 거래 방지")
                 comment = (f"{login_dto.peer_name}님은 이미 퇴장 처리 되었습니다"
-                           f"<br> 다른 클래스를 방문해보는 것은 어떨까요?")
+                           f"\n다른 클래스를 방문해보는 것은 어떨까요?")
 
             else:
                 print("[error] 입장 먼저 하세요.")
@@ -147,7 +144,7 @@ class Commander:
 
             acc_score = self.score_mgr.get_current_point(login_dto)
             used_score = self.point_mgr.get_used_point(login_dto)
-            scr_dto = ScreenDTO(peer_name=login_dto.peer_name, enter_dvcd_kor="비정상 접근", used=used_score,
+            scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, enter_dvcd_kor="비정상 접근", used=used_score,
                                 acc_score=acc_score, current_score=0, comment=comment)
             return scr_dto
 
@@ -158,10 +155,10 @@ class Commander:
                 acc_score = self.score_mgr.get_current_point(login_dto)
                 used_score = self.point_mgr.get_used_point(login_dto)
                 comment = (f"{login_dto.peer_name}님"
-                           f"<br>{self.common_mgr.get_common_desc(recent_enter_info.company_dvcd)}에서 퇴실 처리를 하지 않았습니다."
-                           f"<br> 현재 클래스에서 입장 태그를 찍어도 자동으로 퇴실 처리됩니다. "
-                           f"<br> (❗️체류 시간에 따른 획득 포인트 불이익 발생 가능)")
-                scr_dto = ScreenDTO(peer_name=login_dto.peer_name, enter_dvcd_kor="비정상 접근(퇴장)", used=used_score,
+                           f"\n{self.common_mgr.get_common_desc(recent_enter_info.company_dvcd)}에서 퇴실 처리를 하지 않았습니다."
+                           f"\n 현재 클래스에서 입장 태그를 찍어도 자동으로 퇴실 처리됩니다. "
+                           f"\n (❗️체류 시간에 따른 획득 포인트 불이익 발생 가능)")
+                scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, enter_dvcd_kor="비정상 접근(퇴장)", used=used_score,
                                     acc_score=acc_score, current_score=0, comment=comment)
                 return scr_dto
 
@@ -188,8 +185,8 @@ class Commander:
                             comment = (
                                 f"{login_dto.peer_name}님 퇴실 시간이 "
                                 f"{format(ScoreUtil.calculate_time_by_score(min_point, current_exp_point))} 부족합니다."
-                                f"<br> 그래도 퇴실하시려면 한 번 더 찍으세요")
-                            scr_dto = ScreenDTO(peer_name=login_dto.peer_name, enter_dvcd_kor="퇴실 시간 미충족", used=used_score,
+                                f"\n 그래도 퇴실하시려면 한 번 더 찍으세요")
+                            scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, enter_dvcd_kor="퇴실 시간 미충족", used=used_score,
                                                 acc_score=acc_score, current_score=0, comment=comment)
                             return scr_dto
 
@@ -214,15 +211,15 @@ class Commander:
         if bf_exp_point >= max_point:
             screen_point = 0
             update_point = max_point
-            _comment = (f"{self.common_mgr.get_common_desc(login_dto.argv_company_dvcd)} 클래스에서<br>"
-                        f"획득 가능한 포인트는 모두 채우셨습니다<br><br>다른 클래스를 방문해보시는 것은 어떨까요?")
+            _comment = (f"{self.common_mgr.get_common_desc(login_dto.argv_company_dvcd)} 클래스에서\n"
+                        f"획득 가능한 포인트는 모두 채우셨습니다\n다른 클래스를 방문해보시는 것은 어떨까요?")
 
         # 만점을 넘은 경우, 상한 포인트로 제한
         elif current_exp_point > (max_point - bf_exp_point):
             screen_point = max_point - bf_exp_point
             update_point = max_point
             _comment = (f"입실시간 기록완료 🪄 받은 포인트 : {int(current_exp_point)}"
-                        f"{self.common_mgr.get_common_desc(login_dto.argv_company_dvcd)} 클래스에서<br>"
+                        f"{self.common_mgr.get_common_desc(login_dto.argv_company_dvcd)} 클래스에서\n"
                         f"획득 가능한 포인트는 모두 채우셨습니다")
 
         # 정상 시간 범위
@@ -231,12 +228,12 @@ class Commander:
             update_point = current_exp_point
 
             # 강제 퇴실 동의 받고 온 경우, 0점 처리
-            if self.redis.get(login_dto.peer_id) == 0:
+            if self.redis.get(login_dto.peer_id) == "0":
                 screen_point = 0
                 update_point = 0
                 self.redis.delete(login_dto.peer_id)
 
-            _comment = f"입실시간 기록완료 🪄 받은 포인트 : {int(current_exp_point)}"
+            _comment = f"입실시간 기록완료 🪄 받은 포인트 : {int(screen_point)}"
 
         print("[log] 퇴장 처리 진행")
         self.exit_mgr.set_enter_exit(recent_enter_info)  # latest 입장 > 퇴장 여부 True
@@ -251,7 +248,7 @@ class Commander:
 
         acc_score = self.score_mgr.get_current_point(login_dto)
         used_score = self.point_mgr.get_used_point(login_dto)
-        scr_dto = ScreenDTO(peer_name=login_dto.peer_name, enter_dvcd_kor="퇴장", used_score=used_score,
+        scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, enter_dvcd_kor="퇴장", used_score=used_score,
                             acc_score=acc_score, current_score=screen_point, comment=_comment)
         # ScreenMgr.draw_whole(self.screen_mgr, scr_dto)
         return scr_dto

@@ -18,6 +18,9 @@ class CommonMgr:
     def get_peer_name(self, nfc_uid):
         return self.peer_repo.fetch_peer_id_from_supabase(nfc_uid).name
 
+    def get_peer_company(self, nfc_uid):
+        return self.peer_repo.fetch_peer_id_from_supabase(nfc_uid).company
+
     def get_peer_name_by_id(self, key_id):
         return self.peer_repo.fetch_peer_info_by_id(key_id).name
 
@@ -36,6 +39,7 @@ class CommonMgr:
     def login_setter(self, argv1, argv2, nfc_uid):
         comp_dvcd = self.get_cmn_cd("회사명", argv1)
         enter_dvcd = self.get_cmn_cd("입퇴장구분코드", argv2)
+        peer_company = self.get_peer_company(nfc_uid)
         peer_name = self.get_peer_name(nfc_uid)
         peer_id = self.get_peer_id(nfc_uid)
-        return LoginDTO(peer_id=peer_id, argv_company_dvcd=comp_dvcd, peer_name=peer_name, enter_dvcd=enter_dvcd)
+        return LoginDTO(peer_id=peer_id, argv_company_dvcd=comp_dvcd, peer_name=peer_name, peer_company=peer_company, enter_dvcd=enter_dvcd)

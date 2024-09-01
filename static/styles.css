@@ -43,15 +43,21 @@ body, html {
 .title {
     flex: 1;
     text-align: left;
+    padding: 20px; /* 내부 여백을 설정 */
+    margin: 0; /* 외부 여백 제거 */
+    box-sizing: border-box; /* 패딩과 테두리를 요소의 전체 크기에 포함 */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); /* 그림자 추가 */
+    overflow: hidden; /* 내용이 넘치지 않도록 숨기기 */
 }
 
 .title h1 {
     font-size: 50px;
     font-weight: 700;
-    color: #999;
+    color: #f0f0f0; /* 텍스트 색상을 더 밝은 색으로 변경 */
     text-transform: uppercase;
-    word-spacing: 1px;
-    letter-spacing: 2px;
+    word-spacing: 2px; /* 단어 간격을 조금 더 넓게 설정 */
+    letter-spacing: 3px; /* 글자 간격을 조금 더 넓게 설정 */
+    margin: 0; /* 기본 여백 제거 */
 }
 
 /* 시계 스타일 */
@@ -71,11 +77,13 @@ body, html {
 
 /* 댓글 스타일 */
 .comment h1 {
-    width: 80%; /* 너비 설정 */
-    height: 80px; /* 높이 설정 */
+    box-sizing: border-box; /* padding과 border를 요소의 총 크기에 포함시킴 */
+    width: auto; /* 너비를 자동으로 조정 */
+    max-width: 80%; /* 최대 너비 설정 */
+    height: auto; /* 높이를 자동으로 조정 */
     padding: 30px;
     margin: 20px auto; /* 상자 바깥 여백 설정 및 중앙 정렬 */
-    font-size: 40px;
+    font-size: 30px;
     text-align: center;
     font-style: italic;
     color: #999;
