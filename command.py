@@ -7,22 +7,17 @@ from api.supabase.model.quiz import ScoreInfoDTO
 from common.constants import *
 from common.util import ScoreUtil, CommonUtil
 from config.connect import connect_redis
-from service.batch_score import BatchMgr
 from service.common_service import CommonMgr
 from service.consume_point import PointMgr
-from service.nfc_service import NfcService
 from service.room_stay_service import EnterMgr, ExitMgr, ScoreMgr
 
 class Commander:
-    def __init__(self, enter_mgr: EnterMgr, exit_mgr: ExitMgr, score_mgr: ScoreMgr, common_mgr: CommonMgr,
-                 nfc_mgr: NfcService, point_mgr: PointMgr, batch_mgr: BatchMgr):
-        self.nfc_mgr = nfc_mgr
+    def __init__(self, enter_mgr: EnterMgr, exit_mgr: ExitMgr, score_mgr: ScoreMgr, common_mgr: CommonMgr, point_mgr: PointMgr):
         self.exit_mgr = exit_mgr
         self.enter_mgr = enter_mgr
         self.score_mgr = score_mgr
         self.common_mgr = common_mgr
         self.point_mgr = point_mgr
-        self.batch_mgr = batch_mgr
         self.redis = connect_redis()
 
     def start_card_polling(self, nfc_uid):

@@ -1,15 +1,11 @@
-import time
-
-from api.google.sheet_client import GoogleSheetsClient
 from api.supabase.model.nfc import EntranceInfoDTO
-from api.supabase.model.point import ConsumeInfoDTO, OliveInfoDTO
-from api.supabase.model.quiz import RankDTO, ScoreInfoDTO
+from api.supabase.model.point import ConsumeInfoDTO
+from api.supabase.model.quiz import ScoreInfoDTO
 from api.supabase.repo.common_repo import CommonRepository
 from api.supabase.repo.entrance_repo import EntranceRepository
 from api.supabase.repo.score_repo import ScoreRepository
-from common.config import *
 from common.constants import *
-from common.util import CommonUtil, MapperUtil
+from common.util import CommonUtil
 
 
 class EnterMgr:
@@ -79,11 +75,9 @@ class ExitMgr:
 class ScoreMgr:
     def __init__(self,
                  score_repo: ScoreRepository,
-                 common_repo: CommonRepository,
-                 google_sheet_client:GoogleSheetsClient):
+                 common_repo: CommonRepository):
         self.score_repo = score_repo
         self.common_repo = common_repo
-        self.google_sheet_client = google_sheet_client
 
     def set_score(self, score_dto):
         self.score_repo.update_nfc_exist_time_score(score_dto)
@@ -111,31 +105,3 @@ class ScoreMgr:
 
     def validator(self, login_dto):
         self.score_repo.update_entrance_score(login_dto.peer_id, login_dto.argv_company_dvcd)
-
-    def fetch_quiz_score(self, spreadsheet_id, range_name, company_name):
-        values = self.google_sheet_client.fetch_sheet_data(spreadsheet_id, range_name)
-        if not values:
-            print("No data found.")
-            return
-        quiz_company_dvcd = self.common_repo.get_company_code(company_name).id
-        self.score_repo.upsert_data_to_supabase(values, quiz_company_dvcd)
-
-    def upload_data_to_sheet(self):
-        companies = [
-            (LOG_SPREADSHEET_ID, "대한통운"),
-            (CJ_SPREADSHEET_ID, "제일제당"),
-            (OY_SPREADSHEET_ID, "올리브영"),
-            (ENM_SPREADSHEET_ID, "ENM"),
-            (ONS_SPREADSHEET_ID, "올리브네트웍스")
-        ]
-
-        while True:
-            for spreadsheet_id, company_name in companies:
-                self.fetch_quiz_score(spreadsheet_id, SAMPLE_RANGE_NAME, company_name)
-            response = self.score_repo.fetch_score_from_supabase()
-
-            self.google_sheet_client.batch_update_sheet_data(
-                TOTAL_SCORE_SPREADSHEET_ID,
-                list(RankDTO.__annotations__.keys()),
-                MapperUtil.convert_dicts_to_lists(response))
-            time.sleep(5)  # 각 회사 처리 후 5초 대기
