@@ -1,0 +1,7 @@
+pyscard==2.0.10
+redis==5.0.8
+supabase==2.7.3
+injector==0.22.0
+google-auth-oauthlib==1.2.1
+flask-socketIO==5.3.6
+google-api-python-client==2.143.0
