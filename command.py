@@ -104,7 +104,7 @@ class Commander:
                 comment = (f"{self.common_mgr.get_common_desc(login_dto.argv_company_dvcd)} 클래스에서\n"
                            f"획득 가능한 포인트는 모두 채우셨습니다\n다른 클래스를 방문해보시는 것은 어떨까요?")
             else:
-                comment = (f"재입장인 경우, 입장 포인트는 없습니다.")
+                comment = "재입장인 경우, 입장 포인트는 없습니다."
 
             acc_score = self.score_mgr.get_current_point(login_dto)
             used_score = self.point_mgr.get_used_point(login_dto)
@@ -121,7 +121,7 @@ class Commander:
             acc_score = self.score_mgr.get_current_point(login_dto)
             used_score = self.point_mgr.get_used_point(login_dto)
             current_score = 50
-            comment = (f"입장 포인트 50점 획득")
+            comment = "입장 포인트 50점 획득"
             scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, enter_dvcd_kor="입장", used_score=used_score,
                                 acc_score=acc_score, current_score=current_score, comment=comment)
             #ScreenMgr.draw_whole(self.screen_mgr, scr_dto)
@@ -151,7 +151,7 @@ class Commander:
         else:
             # 검증 : 입장 클래스와 퇴장 클래스가 다른 경우
             if recent_enter_info.company_dvcd != login_dto.argv_company_dvcd:
-                print("[error] 입장 클래스와 퇴장 클래스가 다른 경우 ")
+                print("[error] (퇴장 검증) 입장 클래스와 퇴장 클래스가 다른 경우 ")
                 acc_score = self.score_mgr.get_current_point(login_dto)
                 used_score = self.point_mgr.get_used_point(login_dto)
                 comment = (f"{login_dto.peer_name}님"
@@ -169,8 +169,6 @@ class Commander:
                 # 최초 입장에 대한 퇴장인 경우, 최소 잔류 시간 검증
                 if recent_enter_info.enter_dvcd == ENTER_DVCD_ENTRANCE:
 
-                    print(f"[log] 제 4 검증 {recent_enter_info.enter_dvcd}")
-
                     # 클래스별 최소 체류 시간 확인
                     min_point = CommonUtil.get_min_time_by_company_dvcd(login_dto.argv_company_dvcd)
 
@@ -183,11 +181,15 @@ class Commander:
                             acc_score = self.score_mgr.get_current_point(login_dto)
                             used_score = self.point_mgr.get_used_point(login_dto)
                             comment = (
-                                f"{login_dto.peer_name}님 퇴실 시간이 "
-                                f"{format(ScoreUtil.calculate_time_by_score(min_point, current_exp_point))} 부족합니다."
-                                f"\n 그래도 퇴실하시려면 한 번 더 찍으세요")
-                            scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, enter_dvcd_kor="퇴실 시간 미충족", used=used_score,
-                                                acc_score=acc_score, current_score=0, comment=comment)
+                                f"퇴실 시간이 {format(ScoreUtil.calculate_time_by_score(min_point, current_exp_point))} 부족합니다."
+                                f"\n그래도 퇴실하시려면 한 번 더 찍으세요 (❗️0점 처리)")
+                            scr_dto = ScreenDTO(peer_company=login_dto.peer_company,
+                                                peer_name=login_dto.peer_name,
+                                                enter_dvcd_kor="퇴실 시간 미충족",
+                                                used=used_score,
+                                                acc_score=acc_score,
+                                                current_score=0,
+                                                comment=comment)
                             return scr_dto
 
     def process_exit(self, login_dto:LoginDTO, recent_enter_info):
@@ -228,7 +230,8 @@ class Commander:
             update_point = current_exp_point
 
             # 강제 퇴실 동의 받고 온 경우, 0점 처리
-            if self.redis.get(login_dto.peer_id) == "0":
+            if self.redis.get(login_dto.peer_id) is not None:
+                print(f"[test] 강제 퇴장 처리 {self.redis.get(login_dto.peer_id)}")
                 screen_point = 0
                 update_point = 0
                 self.redis.delete(login_dto.peer_id)
@@ -250,7 +253,6 @@ class Commander:
         used_score = self.point_mgr.get_used_point(login_dto)
         scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, enter_dvcd_kor="퇴장", used_score=used_score,
                             acc_score=acc_score, current_score=screen_point, comment=_comment)
-        # ScreenMgr.draw_whole(self.screen_mgr, scr_dto)
         return scr_dto
 
     def start_sheet_data_batch(self):

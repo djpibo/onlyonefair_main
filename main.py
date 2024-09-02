@@ -1,5 +1,5 @@
 from flask import Flask, render_template
-from flask_socketio import SocketIO, emit
+from flask_socketio import SocketIO
 
 from injector import Injector
 
@@ -16,9 +16,7 @@ commander = injector.get(Commander)
 
 @app.route('/')
 def index():
-    company_name = "param1"
-    nfc_data = "param2"
-    return render_template('index.html', company=company_name, nfc_data=nfc_data)
+    return render_template('index.html')
 
 
 @socketio.on('nfc_data')
