@@ -1,5 +1,3 @@
-import math
-
 from api.supabase.model.common import LoginDTO
 from api.supabase.model.point import ConsumeInfoDTO
 from api.supabase.model.presentation import ScreenDTO
@@ -25,15 +23,14 @@ class Commander:
         if nfc_uid is not None:
             # 각 사 교육지도자인 경우, skip
             if self.common_mgr.validate_teacher(nfc_uid):
-                # TODO 운영진 정보
-                return
+                print(f"[log] 운영진 혹은 TF 인원입니다.")
+                return ScreenDTO(id=999999, comment="ONLYONE FAIR 운영진")
             # 최초 태그 및 특정 순번 태그 인원 식별
             self.common_mgr.count_up(nfc_uid)
             argv1 = self.redis.get('company').decode('utf-8')
             argv2 = self.redis.get('enter').decode('utf-8')
 
             login_dto = self.common_mgr.login_setter(argv1, argv2, nfc_uid)
-
             if login_dto.enter_dvcd == ENTER_DVCD_ENTRANCE:
                 scr_dto = self.validate_enter(login_dto)  # 입장 검증
                 if scr_dto is not None:
@@ -251,66 +248,31 @@ class Commander:
                             acc_score=acc_score, current_score=screen_point, comment=_comment)
         return scr_dto
 
-    def start_sheet_data_batch(self):
-        self.score_mgr.upload_data_to_sheet()
-
-    # 전 사원 중에서 퇴장 여부가 False에 한해, 일괄 퇴장 처리 및 점수 부여(TODO최소시간으로??)
-    def force_exit(self, login_dto=None, latest_enter_info=None):
-        # TODO 최소 시간 미달시 알림 + 재입장인 경우에는 pass > 테스트를 위해 열어둠
-        score = ScoreUtil.calculate_entrance_score(latest_enter_info.created_at)
-
-        # 최초 입장인 경우, 최소 잔류 시간 검증 -> 8분 처리
-        if latest_enter_info.enter_dvcd == ENTER_DVCD_ENTRANCE:
-            min_time_point = CommonUtil.get_min_time_by_company_dvcd(latest_enter_info.company_dvcd)
-            if min_time_point is not None and score < min_time_point:
-                # TODO GUI (퇴장 허용 or 0점 퇴장)
-                print("[error] 최소 시간 미달입니다. {} 필요"
-                      .format(ScoreUtil.calculate_time_by_score(min_time_point, score)))
-
-        # 상한 시간 지정
-        max_time_point = CommonUtil.get_max_time_by_company_dvcd(latest_enter_info.company_dvcd)
-        if max_time_point is not None and score > max_time_point:
-            score = max_time_point
-
-        # TODO 퇴장 점수 반영 > 반영 완료.
-        stay_score_info = ScoreInfoDTO(
-            id=login_dto.peer_id,
-            quiz_dvcd=QUIZ_DVCD_NFC_EXIST_TIME,
-            company_dvcd=login_dto.argv_company_dvcd,
-            score=score
-        )
-        self.score_mgr.set_score(stay_score_info)
-
-        # TODO 화면
-        # ScreenMgr.show_text(f"{login_dto.peer_name}님, 퇴장 완료! {score} 포인트 획득!")
-        print("[log] 퇴장 처리 진행")
-        # TODO 재입장 체류시간 로직 개발 > 완료 (일련번호 칼럼 추가)
-        print(f"[log] latest_enter_info = {latest_enter_info}")
-        self.exit_mgr.set_enter_exit(latest_enter_info)  # latest 입장 > 퇴장 여부 True
-        self.exit_mgr.set_exit_true(latest_enter_info)  # 실제 퇴장 insert
-
     # 포인트 차감
     def point_consumer(self, login_dto):
         consumer = login_dto.peer_id
 
         # 1 연속 거래 방지
-        if CommonUtil.is_less_than_one_minute_interval(self.point_mgr.get_latest_consume(login_dto).created_at):
+
+        if CommonUtil.is_less_than_one_minute_interval(self.point_mgr.get_latest_consume(login_dto)):
             print(f"[log] 연속 거래 방지")
 
         # 2 누적 포인트에 기반해서 계산
         current_point = self.score_mgr.get_current_point(LoginDTO(peer_id=consumer, argv_company_dvcd=99))
-        current_count = math.floor(current_point / 800)
+        used_score = self.point_mgr.get_used_point(login_dto)
 
+        comment = ""
         # 2-1 조건 검증
-        if current_point > CONSUME_LUCKY_POINT:
+        if (current_point - used_score)> CONSUME_PHOTO_POINT:
 
-            # 3 포인트 차감 처리
+            # 3 포인트 차감 처리 (insert++, used_point)
             consume_dto = ConsumeInfoDTO(id=consumer, consume_dvcd=CONSUME_PHOTO_DVCD, used_score=CONSUME_PHOTO_POINT)
             self.point_mgr.consume_point(consume_dto)
-
-            # 4 화면 촬영권 표시
-            re_point = current_point - self.score_mgr.get_total_used_score(consumer)
-            print(f"[log] 총 사용 촬영권 {current_count}, 현재 잔여 촬영권 {math.floor(re_point)}")
-
+            comment = " 📸 촬영권 1매 사용 :)"
         else:
-            print(f"[log] 포인트가 부족합니다 :<")
+            comment = "❗️포인트가 부족합니다 :("
+
+        acc_score = self.score_mgr.get_current_point(login_dto)
+        scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, enter_dvcd_kor="촬영권 사용", used_score=used_score,
+                            acc_score=acc_score, current_score=0, comment=comment)
+        return scr_dto

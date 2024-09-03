@@ -116,7 +116,7 @@ class ScoreRepository:
 
     def insert_used_point(self, consume_info:ConsumeInfoDTO):
         (self.supabase.table("Consume_Info")
-         .upsert({"id": consume_info.id,
+         .insert({"id": consume_info.id,
                   "consume_dvcd": consume_info.consume_dvcd,
                   "used_score": consume_info.used_score}
                  )

@@ -8,23 +8,39 @@ socket.on('nfc_data', function(data) {
 
 // 서버로부터 'polling_result' 이벤트를 수신했을 때 실행되는 함수
 socket.on('polling_result', function(data) {
-    // 각 변수 값을 HTML 요소에 표시
+
+    let accScoreText = `사용가능한 촬영권 \n\n`;
+    if (data.enter_dvcd === '촬영권 0사용') {
+        data.photo = data.photo-1
+        accScoreText += ` ${data.photo} (-1)`; // 포인트가 부족한 경우, (-1) 표시 안하는 것이 맞음. 점수는 예외
+    }
+    else{
+        accScoreText += ` ${data.photo}`;
+    }
+
     document.getElementById('comment').innerText = data.comment;
     document.getElementById('title').innerText = `${data.peer_company}\n ${data.peer_name}님, ${data.enter_dvcd}`;
-    document.getElementById('photo').innerText = `사용가능한 촬영권 \n\n ${data.photo}`;
+    document.getElementById('photo').innerText = accScoreText;
     document.getElementById('acc_score').innerText = `현재까지 받은 포인트\n\n ${data.acc_score} (+${data.current_score})`;
 
-    // futureTime을 설정하고 표시
     const now = new Date();
     const futureTime = new Date(now.getTime() + 8 * 60 * 1000);
-
-    document.getElementById('future-time').innerText
-    = `포인트를 획득 가능한 최소 퇴장 시간:
-    ${padTime(futureTime.getHours())}:${padTime(futureTime.getMinutes())}:${padTime(futureTime.getSeconds())}`;
-
-    // 시계를 매초 업데이트
-    setInterval(() => updateClock(futureTime), 1000);
     updateClock(futureTime);
+
+    console.log(data.enter_dvcd)
+    if (data.enter_dvcd == '입장') {
+        // futureTime을 설정하고 표시
+        console.log(">")
+        document.getElementById('future-time').style.display = 'block';
+        document.getElementById('future-time').innerText
+        = `${padTime(futureTime.getHours())}:${padTime((futureTime.getMinutes() + 1) % 60)} 부터 포인트 획득 가능`;
+
+        // 시계를 매초 업데이트
+        // setInterval(() => updateClock(futureTime), 1000);
+    }
+    else{
+        document.getElementById('future-time').style.display = 'none';
+    }
 });
 
 function padTime(unit) {
@@ -42,17 +58,15 @@ function updateClock(futureTime) {
     document.getElementById('clock').innerText = formattedTime;
 
     // 현재 시각과 futureTime의 차이를 계산
-    let timeDifference = futureTime - now;
-
-    if (timeDifference <= 0) {
-        timeDifference = 0; // 0 이하일 경우 0으로 고정
-    }
-
-    const timeDifference = futureTime - now;
-    const diffHours = padTime(Math.floor((timeDifference / (1000 * 60 * 60)) % 24));
-    const diffMinutes = padTime(Math.floor((timeDifference / (1000 * 60)) % 60));
-    const diffSeconds = padTime(Math.floor((timeDifference / 1000) % 60));
-    const formattedDifference = `${diffHours}:${diffMinutes}:${diffSeconds}`;
-    document.getElementById('time-difference').innerText = `남은 시간: ${formattedDifference}`;
+//    let timeDifference = futureTime - now;
+//
+//    if (timeDifference <= 0) {
+//        timeDifference = 0; // 0 이하일 경우 0으로 고정
+//    }
+//
+//    const diffHours = padTime(Math.floor((timeDifference / (1000 * 60 * 60)) % 24));
+//    const diffMinutes = padTime(Math.floor((timeDifference / (1000 * 60)) % 60));
+//    const diffSeconds = padTime(Math.floor((timeDifference / 1000) % 60));
+//    const formattedDifference = `${diffHours}:${diffMinutes}:${diffSeconds}`;
+//    document.getElementById('time-difference').innerText = `남은 시간: ${formattedDifference}`;
 }
-

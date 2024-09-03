@@ -30,10 +30,8 @@ class CommonMgr:
         self.common_repo.insert_tag_count(CountInfoDTO(id=self.get_peer_id(nfc_uid)))
 
     def validate_teacher(self, nfc_id):
-        grade = self.peer_repo.check_if_teacher(nfc_id).grade
-        if grade == 1:
+        if self.peer_repo.check_if_teacher(nfc_id) is None:
             return True
-        return False
 
     def login_setter(self, argv1, argv2, nfc_uid):
         comp_dvcd = self.get_cmn_cd("회사명", argv1)
