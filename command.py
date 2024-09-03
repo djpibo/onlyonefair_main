@@ -56,12 +56,14 @@ class Commander:
     def validate_enter(self, login_dto:LoginDTO):
         user_not_checked_exit = self.enter_mgr.get_unchecked_exit(login_dto)
         if user_not_checked_exit is not None:  # 퇴장을 찍고 오지 않은 경우 이전 부스 입장 내역이 남아 있다
+
             score = CommonUtil.get_min_time_by_company_dvcd(
                 user_not_checked_exit.company_dvcd) if ScoreUtil.check_min_stay_time(user_not_checked_exit) else 0
 
             # 1-퇴장 처리(입장(또는 재입장) => True, 퇴장 insert)
             self.exit_mgr.set_enter_exit(user_not_checked_exit)
             self.exit_mgr.set_exit_true(user_not_checked_exit)
+
             # 2-최소 점수 받기 (그리고 입장)
             set_to_score_info = ScoreInfoDTO(
                 id=login_dto.peer_id,
@@ -71,7 +73,7 @@ class Commander:
             )
             self.score_mgr.set_score(set_to_score_info)
 
-            # GUI case 1-퇴실 안찍고 입장한 경우
+            # GUI case 1-다른 클래스에서 퇴실 안찍고 입장한 경우
             acc_score = self.score_mgr.get_current_point(login_dto)
             used_score = self.point_mgr.get_used_point(login_dto)
             current_score = score
@@ -79,7 +81,6 @@ class Commander:
                        f" 최소 점수({current_score})로 퇴장 처리됐습니다.")
             scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, used_score=used_score, acc_score=acc_score,
                                 enter_dvcd_kor="입장", current_score=current_score, comment=comment)
-            # ScreenMgr.draw_whole(self.screen_mgr, scr_dto)
 
             print(f"[log] 최소 점수로 입장 처리. 클래스명: "
                   f"{self.common_mgr.get_common_desc(user_not_checked_exit.company_dvcd)}")
@@ -128,7 +129,7 @@ class Commander:
         # 검증 : 입장 안 찍고 퇴장 먼저 하는 경우
         if recent_enter_info is None:
             comment = ""
-            if CommonUtil.is_less_than_one_minute_interval(self.enter_mgr.get_latest_exit(login_dto).created_at):
+            if CommonUtil.is_less_than_one_minute_interval(self.enter_mgr.get_latest_exit(login_dto)):
                 print(f"[log] 연속 거래 방지")
                 comment = (f"{login_dto.peer_name}님은 이미 퇴장 처리 되었습니다"
                            f"\n다른 클래스를 방문해보는 것은 어떨까요?")
@@ -215,7 +216,7 @@ class Commander:
         elif current_exp_point > (max_point - bf_exp_point):
             screen_point = max_point - bf_exp_point
             update_point = max_point
-            _comment = (f"입실시간 기록완료 🪄 받은 포인트 : {int(current_exp_point)}"
+            _comment = (f"입실시간 기록완료 🪄 받은 포인트 : {int(current_exp_point)}\n"
                         f"{self.common_mgr.get_common_desc(login_dto.argv_company_dvcd)} 클래스에서\n"
                         f"획득 가능한 포인트는 모두 채우셨습니다")
 

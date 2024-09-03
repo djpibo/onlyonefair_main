@@ -24,7 +24,9 @@ class CommonUtil:
 
     @staticmethod
     def is_less_than_one_minute_interval(given_time):
-        return CommonUtil.calculate_time_interval(given_time) < 60
+        if given_time is None:
+            return False
+        return CommonUtil.calculate_time_interval(given_time.created_at) < 60
 
 class ScoreUtil:
     def __init__(self):
@@ -48,6 +50,7 @@ class ScoreUtil:
         print(f"[log] 경과 시간 확인 {ScoreUtil.calculate_entrance_score(response.created_at)}")
         print(f"[log] 각 사 최소 시간 {CommonUtil.get_min_time_by_company_dvcd(response.company_dvcd)}")
 
+        # 각 사 최소체류시간보다 오래 버틴 경우, true
         return (ScoreUtil.calculate_entrance_score(response.created_at)
                 > CommonUtil.get_min_time_by_company_dvcd(response.company_dvcd))
 

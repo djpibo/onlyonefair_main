@@ -14,19 +14,24 @@ socket.on('polling_result', function(data) {
     document.getElementById('photo').innerText = `사용가능한 촬영권 \n\n ${data.photo}`;
     document.getElementById('acc_score').innerText = `현재까지 받은 포인트\n\n ${data.acc_score} (+${data.current_score})`;
 
+    // futureTime을 설정하고 표시
+    const now = new Date();
+    const futureTime = new Date(now.getTime() + 8 * 60 * 1000);
 
-    // polling-result 블록을 표시
-    document.getElementById('polling-result').style.display = 'block';// 제목 변경
-    document.getElementById('page-title').innerText = 'Polling 결과';
+    document.getElementById('future-time').innerText
+    = `포인트를 획득 가능한 최소 퇴장 시간:
+    ${padTime(futureTime.getHours())}:${padTime(futureTime.getMinutes())}:${padTime(futureTime.getSeconds())}`;
 
-
+    // 시계를 매초 업데이트
+    setInterval(() => updateClock(futureTime), 1000);
+    updateClock(futureTime);
 });
 
 function padTime(unit) {
     return String(unit).padStart(2, '0');
 }
 
-function updateClock() {
+function updateClock(futureTime) {
     const now = new Date();
 
     // 현재 시각 표시
@@ -37,6 +42,12 @@ function updateClock() {
     document.getElementById('clock').innerText = formattedTime;
 
     // 현재 시각과 futureTime의 차이를 계산
+    let timeDifference = futureTime - now;
+
+    if (timeDifference <= 0) {
+        timeDifference = 0; // 0 이하일 경우 0으로 고정
+    }
+
     const timeDifference = futureTime - now;
     const diffHours = padTime(Math.floor((timeDifference / (1000 * 60 * 60)) % 24));
     const diffMinutes = padTime(Math.floor((timeDifference / (1000 * 60)) % 60));
@@ -45,13 +56,3 @@ function updateClock() {
     document.getElementById('time-difference').innerText = `남은 시간: ${formattedDifference}`;
 }
 
-// 페이지 로드 시 시계 초기화
-const now = new Date();
-const futureTime = new Date(now.getTime() + 8 * 60 * 1000);
-
-// futureTime을 표시
-document.getElementById('future-time').innerText = `포인트를 획득 가능한 최소 퇴장 시간: ${padTime(futureTime.getHours())}:${padTime(futureTime.getMinutes())}:${padTime(futureTime.getSeconds())}`;
-
-// 시계를 매초 업데이트
-setInterval(updateClock, 1000);
-updateClock();
