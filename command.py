@@ -282,7 +282,7 @@ class Commander:
         return scr_dto
 
     def process_welcome(self, login_dto:LoginDTO):
-        comment = (f"ONLYONE FAIR에 오신 것을 환영합니다!⭐\n많은 상품이 {login_dto.peer_name}님을 기다리고 있어요:)\n 열심히 참여해주실거죠?❤️")
+        comment = (f"ONLYONE FAIR 공유회에 오신 것을 환영합니다! ⭐\n 지난 5주 간 정말 고생 많았어요 {login_dto.peer_name}님 ❤️\n오늘은 여정을 마무리하는 뜻 깊은 하루가 되길 바랄게요 🍀")
         scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, used_score=0,
                             acc_score=0,
                             enter_dvcd_kor="🫡", current_score=0, comment=comment)
