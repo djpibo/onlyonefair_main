@@ -19,10 +19,9 @@ socket.on('polling_result', function(data) {
     }
 
     let accScoreText = `현재까지 받은 포인트\n\n ${data.acc_score}`;
-    if (data.current_score > 0) {
-        photoText += ` (+${data.current_score})`;
+    if (data.current_score !== 0) {
+        accScoreText += ` (+${data.current_score})`;
     }
-
     document.getElementById('acc_score').innerText = `현재까지 받은 포인트\n\n ${data.acc_score} (+${data.current_score})`;
 
     document.getElementById('comment').innerText = data.comment;
