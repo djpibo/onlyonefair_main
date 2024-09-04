@@ -24,7 +24,9 @@ class Commander:
             # 각 사 교육지도자인 경우, skip
             if self.common_mgr.validate_teacher(nfc_uid):
                 print(f"[log] 운영진 혹은 TF 인원입니다.")
-                return ScreenDTO(id=999999, comment="ONLYONE FAIR 운영진")
+                return ScreenDTO(peer_company="ONLYONE FAIR", peer_name="운영진", enter_dvcd_kor="", used=0,
+                                acc_score=0, current_score=0, comment="촬영권 무한, 포인트 적용 대상 X")
+
             # 최초 태그 및 특정 순번 태그 인원 식별
             self.common_mgr.count_up(nfc_uid)
             argv1 = self.redis.get('company').decode('utf-8')
@@ -43,8 +45,12 @@ class Commander:
                 if scr_dto is not None:
                     return scr_dto
                 return self.process_exit(login_dto, recent_enter_info)  # 퇴장 처리
-            else:
+
+            elif login_dto.enter_dvcd == ENTER_DVCD_PHOTO:
                 return self.point_consumer(login_dto)
+
+            else:
+                return self.process_welcome(login_dto)
 
         else:
             print(f"[ERROR] NFC UID 수신 오류")
@@ -248,12 +254,10 @@ class Commander:
                             acc_score=acc_score, current_score=screen_point, comment=_comment)
         return scr_dto
 
-    # 포인트 차감
     def point_consumer(self, login_dto):
         consumer = login_dto.peer_id
 
         # 1 연속 거래 방지
-
         if CommonUtil.is_less_than_one_minute_interval(self.point_mgr.get_latest_consume(login_dto)):
             print(f"[log] 연속 거래 방지")
 
@@ -268,11 +272,22 @@ class Commander:
             # 3 포인트 차감 처리 (insert++, used_point)
             consume_dto = ConsumeInfoDTO(id=consumer, consume_dvcd=CONSUME_PHOTO_DVCD, used_score=CONSUME_PHOTO_POINT)
             self.point_mgr.consume_point(consume_dto)
-            comment = " 📸 촬영권 1매 사용 :)"
+            comment = " 📸 촬영권 1매 사용:)"
         else:
-            comment = "❗️포인트가 부족합니다 :("
+            comment = "❗️포인트가 부족합니다:("
 
         acc_score = self.score_mgr.get_current_point(login_dto)
         scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, enter_dvcd_kor="촬영권 사용", used_score=used_score,
                             acc_score=acc_score, current_score=0, comment=comment)
         return scr_dto
+
+    def process_welcome(self, login_dto:LoginDTO):
+        comment = (f"ONLYONE FAIR에 오신 것을 환영합니다!⭐\n많은 상품이 {login_dto.peer_name}님을 기다리고 있어요:)\n 열심히 참여해주실거죠?❤️")
+        scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, used_score=0,
+                            acc_score=0,
+                            enter_dvcd_kor="🫡", current_score=0, comment=comment)
+
+        print("[log] 출석 처리")
+
+        return scr_dto
+

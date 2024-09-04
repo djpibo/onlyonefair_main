@@ -9,19 +9,26 @@ socket.on('nfc_data', function(data) {
 // 서버로부터 'polling_result' 이벤트를 수신했을 때 실행되는 함수
 socket.on('polling_result', function(data) {
 
-    let accScoreText = `사용가능한 촬영권 \n\n`;
+    let photoText = `사용가능한 촬영권 \n\n`;
     if (data.enter_dvcd === '촬영권 0사용') {
         data.photo = data.photo-1
-        accScoreText += ` ${data.photo} (-1)`; // 포인트가 부족한 경우, (-1) 표시 안하는 것이 맞음. 점수는 예외
+        photoText += ` ${data.photo} (-1)`; // 포인트가 부족한 경우, (-1) 표시 안하는 것이 맞음. 점수는 예외
     }
     else{
-        accScoreText += ` ${data.photo}`;
+        photoText += ` ${data.photo}`;
     }
+
+    let accScoreText = `현재까지 받은 포인트\n\n ${data.acc_score}`;
+    if (data.current_score > 0) {
+        photoText += ` (+${data.current_score})`;
+    }
+
+    document.getElementById('acc_score').innerText = `현재까지 받은 포인트\n\n ${data.acc_score} (+${data.current_score})`;
 
     document.getElementById('comment').innerText = data.comment;
     document.getElementById('title').innerText = `${data.peer_company}\n ${data.peer_name}님, ${data.enter_dvcd}`;
-    document.getElementById('photo').innerText = accScoreText;
-    document.getElementById('acc_score').innerText = `현재까지 받은 포인트\n\n ${data.acc_score} (+${data.current_score})`;
+    document.getElementById('photo').innerText = photoText;
+    document.getElementById('acc_score').innerText = accScoreText;
 
     const now = new Date();
     const futureTime = new Date(now.getTime() + 8 * 60 * 1000);
@@ -34,13 +41,11 @@ socket.on('polling_result', function(data) {
         document.getElementById('future-time').style.display = 'block';
         document.getElementById('future-time').innerText
         = `${padTime(futureTime.getHours())}:${padTime((futureTime.getMinutes() + 1) % 60)} 부터 포인트 획득 가능`;
-
-        // 시계를 매초 업데이트
-        // setInterval(() => updateClock(futureTime), 1000);
     }
     else{
         document.getElementById('future-time').style.display = 'none';
     }
+    setInterval(() => updateClock(futureTime), 1000);
 });
 
 function padTime(unit) {

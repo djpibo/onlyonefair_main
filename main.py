@@ -1,5 +1,3 @@
-from multiprocessing import Manager
-
 from flask import Flask, render_template
 from flask_socketio import SocketIO
 
@@ -29,8 +27,17 @@ def handle_nfc_data(response):
     scr_dto: ScreenDTO = commander.start_card_polling(response['data'])
 
     # 운영진 > redirect
-    if scr_dto.id == 999999:
-        return render_template('admin.html')
+    if scr_dto.peer_name == "운영진":
+        print(f"[log] 운영진 렌더링 시작.. ")
+        socketio.emit('polling_result', {
+            'comment': scr_dto.comment,
+            'acc_score': '',
+            'current_score': '☺︎',
+            'photo': '♾️',
+            'peer_name': scr_dto.peer_name,
+            'peer_company': scr_dto.peer_company,
+            'enter_dvcd': '',
+        })
     else:
         # 클라이언트에 반환된 결과를 전송
         socketio.emit('polling_result', {
