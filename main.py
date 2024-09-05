@@ -32,14 +32,25 @@ def handle_nfc_data(response):
         if scr_dto.peer_name == "운영진":
             print(f"[log] 운영진 렌더링 시작.. ")
             socketio.emit('polling_result', {
-                'comment': scr_dto.comment,
-                'acc_score': '',
-                'current_score': '☺︎',
+                'comment': '! ! ! HAPPY BIRTHDAY TO YOU ! ! !',
+                'acc_score': '100',
+                'current_score': '100',
                 'photo': '♾️',
-                'peer_name': scr_dto.peer_name,
-                'peer_company': scr_dto.peer_company,
+                'peer_name': '김도연님(QA/QC)^^',
+                'peer_company': 'TF의 빛과 소금! 김도연님 생일 축하해요 ㅎㅎ',
                 'enter_dvcd': '',
             })
+        # if scr_dto.peer_name == "운영진":
+        #     print(f"[log] 운영진 렌더링 시작.. ")
+        #     socketio.emit('polling_result', {
+        #         'comment': scr_dto.comment,
+        #         'acc_score': '',
+        #         'current_score': '☺︎',
+        #         'photo': '♾️',
+        #         'peer_name': scr_dto.peer_name,
+        #         'peer_company': scr_dto.peer_company,
+        #         'enter_dvcd': '',
+        #     })
         else:
             # 클라이언트에 반환된 결과를 전송
             socketio.emit('polling_result', {
@@ -52,6 +63,7 @@ def handle_nfc_data(response):
                 'enter_dvcd': scr_dto.enter_dvcd_kor,
                 'require_time': scr_dto.require_time,
             })
+
     except (httpx.RequestError, httpx.HTTPError, httpx.HTTPStatusError) as exc:
         return None
 
