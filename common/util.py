@@ -1,4 +1,5 @@
 from datetime import datetime
+import pytz
 from zoneinfo import ZoneInfo
 
 from api.supabase.model.nfc import EntranceInfoDTO
@@ -19,7 +20,7 @@ class CommonUtil:
 
     @staticmethod
     def calculate_time_interval(given_time):
-        current_time = datetime.now(ZoneInfo('Asia/Seoul'))
+        current_time = pytz.timezone('Asia/Seoul')
         return int(current_time.timestamp() - given_time.timestamp())
 
     @staticmethod
@@ -34,7 +35,8 @@ class ScoreUtil:
 
     @staticmethod
     def calculate_entrance_score(target_time):
-        time_difference = int(datetime.now(ZoneInfo('Asia/Seoul')).timestamp() - target_time.timestamp())
+        time_difference = int(pytz.timezone('Asia/Seoul').timestamp() - target_time.timestamp())
+        # time_difference = int(datetime.now(ZoneInfo('Asia/Seoul')).timestamp() - target_time.timestamp())
         return time_difference * TIME_POINT_PER_SECOND
 
     @staticmethod

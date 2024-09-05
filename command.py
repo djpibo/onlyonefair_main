@@ -57,6 +57,9 @@ class Commander:
             return None
 
     def validate_enter(self, login_dto:LoginDTO):
+
+        # TODO 최초에 한 번 입장한 경우, 이전 입장
+
         user_not_checked_exit = self.enter_mgr.get_unchecked_exit(login_dto)
         if user_not_checked_exit is not None:  # 퇴장을 찍고 오지 않은 경우 이전 부스 입장 내역이 남아 있다
 
