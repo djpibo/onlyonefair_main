@@ -20,7 +20,8 @@ class CommonUtil:
 
     @staticmethod
     def calculate_time_interval(given_time):
-        current_time = pytz.timezone('Asia/Seoul')
+        seoul_tz = pytz.timezone('Asia/Seoul')
+        current_time = datetime.now(seoul_tz)
         return int(current_time.timestamp() - given_time.timestamp())
 
     @staticmethod
@@ -35,7 +36,9 @@ class ScoreUtil:
 
     @staticmethod
     def calculate_entrance_score(target_time):
-        time_difference = int(pytz.timezone('Asia/Seoul').timestamp() - target_time.timestamp())
+        seoul_tz = pytz.timezone('Asia/Seoul')
+        current_time = datetime.now(seoul_tz)
+        time_difference = int(current_time.timestamp() - target_time.timestamp())
         # time_difference = int(datetime.now(ZoneInfo('Asia/Seoul')).timestamp() - target_time.timestamp())
         return time_difference * TIME_POINT_PER_SECOND
 
