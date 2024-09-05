@@ -181,13 +181,14 @@ class Commander:
                     if current_exp_point < min_point:
                         value = self.redis.get(login_dto.peer_id)
                         if value is None:
-                            self.redis.set(login_dto.peer_id, 0)
+                            self.redis.set(login_dto.peer_id, 0, ex=10)
 
                             acc_score = self.score_mgr.get_current_point(login_dto)
                             used_score = self.point_mgr.get_used_point(login_dto)
                             comment = (
                                 f"경험 시간이 {format(ScoreUtil.calculate_time_by_score(min_point, current_exp_point))} 부족합니다."
-                                f"\n그래도 퇴실하시려면 한 번 더 태그해주세요 (❗️0점 처리)")
+                                f"\n그래도 퇴실하시려면 10초 이내에 한 번 더 태그해주세요"
+                                f"\n(❗️단,️ 0점으로 처리될 수 있습니다)")
                             scr_dto = ScreenDTO(peer_company=login_dto.peer_company,
                                                 peer_name=login_dto.peer_name,
                                                 enter_dvcd_kor="최소 경험시간 미충족",
@@ -225,7 +226,7 @@ class Commander:
         elif current_exp_point > (max_point - bf_exp_point):
             screen_point = max_point - bf_exp_point
             update_point = max_point
-            _comment = (f"입실시간 기록완료 🪄 받은 포인트 : {int(current_exp_point)}\n"
+            _comment = (f"입실시간 기록완료 👍 받은 포인트 : {int(current_exp_point)}\n"
                         f"{self.common_mgr.get_common_desc(login_dto.argv_company_dvcd)} 클래스에서\n"
                         f"획득 가능한 포인트는 모두 채우셨습니다")
 
@@ -241,7 +242,7 @@ class Commander:
                 update_point = 0
                 self.redis.delete(login_dto.peer_id)
 
-            _comment = f"입실시간 기록완료 🪄 받은 포인트 : {int(screen_point)}"
+            _comment = f"입실시간 기록완료 👍 받은 포인트 : {int(screen_point)}"
 
         print("[log] 퇴장 처리 진행")
         self.exit_mgr.set_enter_exit(recent_enter_info)  # latest 입장 > 퇴장 여부 True
