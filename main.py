@@ -48,6 +48,7 @@ def handle_nfc_data(response):
             'peer_name': scr_dto.peer_name,
             'peer_company': scr_dto.peer_company,
             'enter_dvcd': scr_dto.enter_dvcd_kor,
+            'require_time': scr_dto.require_time,
         })
 
 if __name__ == "__main__":

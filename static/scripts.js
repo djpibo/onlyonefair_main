@@ -30,7 +30,7 @@ socket.on('polling_result', function(data) {
     document.getElementById('acc_score').innerText = accScoreText;
 
     const now = new Date();
-    const futureTime = new Date(now.getTime() + 8 * 60 * 1000);
+    const futureTime = new Date(now.getTime() + data.require_time * 60 * 1000);
     updateClock(futureTime);
 
     console.log(data.enter_dvcd)

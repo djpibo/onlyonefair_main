@@ -84,9 +84,10 @@ class Commander:
             used_score = self.point_mgr.get_used_point(login_dto)
             current_score = score
             comment = (f"{self.common_mgr.get_common_desc(user_not_checked_exit.company_dvcd)}은/는"
-                       f" 최소 점수({current_score})로 퇴장 처리됐습니다.")
+                       f" 최소 점수({current_score})로 퇴장 처리됐습니다.\n"
+                       f" 입장 처리를 위해, 한 번 더 ONLYONE BAND를 태그해주세요.")
             scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, used_score=used_score, acc_score=acc_score,
-                                enter_dvcd_kor="입장", current_score=current_score, comment=comment)
+                                enter_dvcd_kor="입장대기", current_score=current_score, comment=comment)
 
             print(f"[log] 최소 점수로 입장 처리. 클래스명: "
                   f"{self.common_mgr.get_common_desc(user_not_checked_exit.company_dvcd)}")
@@ -117,6 +118,7 @@ class Commander:
 
         else:  # 최초 입장
             print("[log] 최초 입장 처리 진행")
+            # 입장하는 클래스에 따라 경과 시간 분기
             # 입장 포인트 부여
             self.score_mgr.set_entrance_point(login_dto)
             self.enter_mgr.set_to_enter(login_dto)
@@ -125,7 +127,8 @@ class Commander:
             current_score = 50
             comment = "입장 포인트 50점 획득"
             scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, enter_dvcd_kor="입장", used_score=used_score,
-                                acc_score=acc_score, current_score=current_score, comment=comment)
+                                acc_score=acc_score, current_score=current_score, comment=comment,
+                                require_time=8 if login_dto.argv_company_dvcd in BIG_ROOM_COMPANY else 3)
             #ScreenMgr.draw_whole(self.screen_mgr, scr_dto)
 
             return scr_dto
@@ -142,11 +145,11 @@ class Commander:
 
             else:
                 print("[error] 입장 먼저 하세요.")
-                comment = f"{login_dto.peer_name}님 입실 태그 먼저 하고 오세요"
+                comment = f"입실 리더기에 ONLYONE BAND를 태그해주세요."
 
             acc_score = self.score_mgr.get_current_point(login_dto)
             used_score = self.point_mgr.get_used_point(login_dto)
-            scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, enter_dvcd_kor="비정상 접근", used=used_score,
+            scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, enter_dvcd_kor="잘못된 리더기에 태그", used=used_score,
                                 acc_score=acc_score, current_score=0, comment=comment)
             return scr_dto
 
@@ -158,9 +161,9 @@ class Commander:
                 used_score = self.point_mgr.get_used_point(login_dto)
                 comment = (f"{login_dto.peer_name}님"
                            f"\n{self.common_mgr.get_common_desc(recent_enter_info.company_dvcd)}에서 퇴실 처리를 하지 않았습니다."
-                           f"\n 현재 클래스에서 입장 태그를 찍어도 자동으로 퇴실 처리됩니다. "
+                           f"\n 입실 리더기에 ONLYONE BAND를 태그해주세요."
                            f"\n (❗️체류 시간에 따른 획득 포인트 불이익 발생 가능)")
-                scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, enter_dvcd_kor="비정상 접근(퇴장)", used=used_score,
+                scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, enter_dvcd_kor="잘못된 리더기에 태그", used=used_score,
                                     acc_score=acc_score, current_score=0, comment=comment)
                 return scr_dto
 
@@ -183,11 +186,11 @@ class Commander:
                             acc_score = self.score_mgr.get_current_point(login_dto)
                             used_score = self.point_mgr.get_used_point(login_dto)
                             comment = (
-                                f"퇴실 시간이 {format(ScoreUtil.calculate_time_by_score(min_point, current_exp_point))} 부족합니다."
-                                f"\n그래도 퇴실하시려면 한 번 더 찍으세요 (❗️0점 처리)")
+                                f"경험 시간이 {format(ScoreUtil.calculate_time_by_score(min_point, current_exp_point))} 부족합니다."
+                                f"\n그래도 퇴실하시려면 한 번 더 태그해주세요 (❗️0점 처리)")
                             scr_dto = ScreenDTO(peer_company=login_dto.peer_company,
                                                 peer_name=login_dto.peer_name,
-                                                enter_dvcd_kor="퇴실 시간 미충족",
+                                                enter_dvcd_kor="최소 경험시간 미충족",
                                                 used=used_score,
                                                 acc_score=acc_score,
                                                 current_score=0,

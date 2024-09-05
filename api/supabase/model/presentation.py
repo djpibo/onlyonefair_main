@@ -10,3 +10,4 @@ class ScreenDTO(BaseModel):
     used_score: Optional[float] = 0
     current_score: Optional[float] = 0
     enter_dvcd_kor: Optional[str] = None
+    require_time: Optional[int] = 0
