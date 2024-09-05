@@ -21,7 +21,7 @@ def index():
 
 @socketio.on('nfc_data')
 def handle_nfc_data(response):
-    print("NFC 데이터 수신:", response)
+    print("[log] NFC 데이터 수신:", response)
 
     # start_card_polling 함수가 5개의 변수를 반환한다고 가정
     # var1, var2, var3, var4, var5 = commander.start_card_polling(response['data'])
