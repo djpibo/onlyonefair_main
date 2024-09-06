@@ -15,17 +15,19 @@ class CommonUtil:
 
     @staticmethod
     def get_max_time_by_company_dvcd(company_dvcd):
-        print(f"[log] company_dvcd = {company_dvcd}")
+        print("[log] 공통 유틸 : 각 클래스별 최대 포인트 가져오기")
         return MAX_TIME_POINT_BIG if company_dvcd in BIG_ROOM_COMPANY else MAX_TIME_POINT_SMALL
 
     @staticmethod
     def calculate_time_interval(given_time):
+        print("[log] 공통 유틸 : 체류 시간 계산하기")
         seoul_tz = pytz.timezone('Asia/Seoul')
         current_time = datetime.now(seoul_tz)
         return int(current_time.timestamp() - given_time.timestamp())
 
     @staticmethod
     def is_less_than_one_minute_interval(given_time):
+        print("[log] 공통 유틸 : 연속 거래 방지하기")
         if given_time is None:
             return False
         return CommonUtil.calculate_time_interval(given_time.created_at) < 60
@@ -36,10 +38,10 @@ class ScoreUtil:
 
     @staticmethod
     def calculate_entrance_score(target_time):
+        print("[log] 공통 유틸 : 체류 시간 계산하기")
         seoul_tz = pytz.timezone('Asia/Seoul')
         current_time = datetime.now(seoul_tz)
         time_difference = int(current_time.timestamp() - target_time.timestamp())
-        # time_difference = int(datetime.now(ZoneInfo('Asia/Seoul')).timestamp() - target_time.timestamp())
         return time_difference * TIME_POINT_PER_SECOND
 
     @staticmethod
@@ -51,7 +53,7 @@ class ScoreUtil:
         return f"{int(remain_time_sec/60)}분 {int(remain_time_sec%60)}초"
 
     @staticmethod
-    def check_min_stay_time(response:EntranceInfoDTO):
+    def check_min_stay_time(response):
         print(f"[log] 경과 시간 확인 {ScoreUtil.calculate_entrance_score(response.created_at)}")
         print(f"[log] 각 사 최소 시간 {CommonUtil.get_min_time_by_company_dvcd(response.company_dvcd)}")
 
@@ -67,7 +69,6 @@ class MapperUtil:
 
     @staticmethod
     def multi_mapper(response: APIResponse, dto_class: Type[T]) -> Optional[List[T]]:
-        print(f"타입 체크 : {type(response.data)}")
         return response.data
         # if not data:
         #     print(f"[log] data none? test !")

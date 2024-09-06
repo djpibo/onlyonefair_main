@@ -80,6 +80,7 @@ class ScoreRepository:
                  "company_dvcd": source.company_dvcd})
             .execute()
         )
+        return query
 
     # 입장 포인트 점수 부여
     def update_entrance_score(self, peer_id, company_dvcd):
@@ -153,9 +154,9 @@ class ScoreRepository:
                 .execute()).data
 
     def get_used_point_by_id(self, peer_id):
-        response = self.supabase.table("Consume_Info").select("used_score").eq("id", peer_id).execute()
-        if response.data is None:
-            return None
-        return response.data
+        return self.supabase.table("Consume_Info").select("*").eq("id", peer_id).execute().data
+
+    def get_data_by_id(self, peer_id):
+        return self.supabase.table("Score_Info").select("*").eq("id", peer_id).execute().data
 
 

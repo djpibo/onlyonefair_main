@@ -31,3 +31,28 @@ QUIZ_SHEET_COL_INDEX_ID = 3
 
 CONSUME_PHOTO_DVCD = 15
 CONSUME_LUCKY_DVCD = 16 # 럭키 드로우는 향후 일괄 집계
+
+COMPANY_CODES = {
+    "제일제당": 5,
+    "대한통운": 6,
+    "올리브영": 7,
+    "ENM": 8,
+    "커머스": 13,
+    "올리브네트웍스": 9,
+}
+
+COMPANY_NAMES = {
+    5: '제일제당',
+    6: '대한통운',
+    7: '올리브영',
+    8: 'ENM',
+    9: '올리브네트웍스',
+    13: '커머스'
+}
+
+ENTER_EXIT_CODES = {
+    '입장': 10,
+    '퇴장': 11,
+    '재입장': 12,
+    '마감': 19
+}

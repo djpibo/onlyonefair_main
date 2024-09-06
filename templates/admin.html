@@ -4,15 +4,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>💥ONLYONE FAIR</title>
-    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
 </head>
 <body>
     <div class="container">
-       <h1 id="title">Heading Style Five</h1>
+        <div class="title-container">
+            <div class="title">
+                <h1 id="title"> {{scr_dto.peer_company}}<br> {{scr_dto.peer_name}}님, {{scr_dto.enter_dvcd}}</h1>
+            </div>
+            <div class="clock">
+                <h2 id="clock">00:00:00</h2>
+                <p id="future-time" style="display: none;">08:00 후 시각: --:--:--</p>
+            </div>
+        </div>
+        <hr class="hr-14">
+        <div class="comment">
+          <h1 id="comment">{{scr_dto.comment}}</h1>
+        </div>
+        <hr class="hr-14">
+        <div class="square-container">
+            <div class="score" id="acc_score">
+                <h1>현재까지 받은 포인트<br><br> {{scr_dto.acc_score}} (+{{scr_dto.current_score}})</h1>
+            </div>
+            <div class="photo" id="photo">
+                <h1>촬영권<br><br>{{scr_dto.photo}}</h1>
+            </div>
+        </div>
     </div>
-    <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
-    <script src="{{ url_for('static', filename='scripts.js') }}"></script>
+    <script src="https://cdn.socket.io/4.3.2/socket.io.min.js" defer></script>
+    <script src="{{ url_for('static', filename='scripts.js') }}" defer></script>
 </body>
 </html>

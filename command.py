@@ -1,4 +1,5 @@
 from api.supabase.model.common import LoginDTO
+from api.supabase.model.nfc import EntranceInfoDTO
 from api.supabase.model.point import ConsumeInfoDTO
 from api.supabase.model.presentation import ScreenDTO
 from api.supabase.model.quiz import ScoreInfoDTO
@@ -28,11 +29,15 @@ class Commander:
                                 acc_score=0, current_score=0, comment="촬영권 무한, 포인트 적용 대상 X")
 
             # 최초 태그 및 특정 순번 태그 인원 식별
-            self.common_mgr.count_up(nfc_uid)
+            self.common_mgr.count_up(nfc_uid) #TODO 마감치면서 올리기
             argv1 = self.redis.get('company').decode('utf-8')
             argv2 = self.redis.get('enter').decode('utf-8')
 
+            print(f"[log] test > argv2 {argv2}")
+
             login_dto = self.common_mgr.login_setter(argv1, argv2, nfc_uid)
+
+            print(f"[log] test > argv2 {login_dto.enter_dvcd}")
             if login_dto.enter_dvcd == ENTER_DVCD_ENTRANCE:
                 scr_dto = self.validate_enter(login_dto)  # 입장 검증
                 if scr_dto is not None:
@@ -57,12 +62,18 @@ class Commander:
             return None
 
     def validate_enter(self, login_dto:LoginDTO):
+        print("[log] 입장 검증 진행")
+        response_enter = self.enter_mgr.get_entrance_data(login_dto)
+        response_score = self.point_mgr.get_score_data(login_dto)
 
-        # TODO 최초에 한 번 입장한 경우, 이전 입장
+        _user_not_checked_exit = self.enter_mgr.filter_unchecked_exit(response_enter, login_dto)
 
-        user_not_checked_exit = self.enter_mgr.get_unchecked_exit(login_dto)
-        if user_not_checked_exit is not None:  # 퇴장을 찍고 오지 않은 경우 이전 부스 입장 내역이 남아 있다
 
+        print(f"[log] test user_not_checked_exit > {_user_not_checked_exit}")
+
+        if _user_not_checked_exit:  # 퇴장을 찍고 오지 않은 경우 이전 부스 입장 내역이 남아 있다
+
+            user_not_checked_exit = EntranceInfoDTO(**_user_not_checked_exit)
             score = CommonUtil.get_min_time_by_company_dvcd(
                 user_not_checked_exit.company_dvcd) if ScoreUtil.check_min_stay_time(user_not_checked_exit) else 0
 
@@ -77,10 +88,11 @@ class Commander:
                 company_dvcd=user_not_checked_exit.company_dvcd,
                 score=score
             )
-            self.score_mgr.set_score(set_to_score_info)
+            response = self.score_mgr.set_score(set_to_score_info)
+            print(f"[log] response > {response}")
 
             # GUI case 1-다른 클래스에서 퇴실 안찍고 입장한 경우
-            acc_score = self.score_mgr.get_current_point(login_dto)
+            acc_score = self.score_mgr.sum_current_point(response_score) + response.data['score']
             used_score = self.point_mgr.get_used_point(login_dto)
             current_score = score
             comment = (f"{self.common_mgr.get_common_desc(user_not_checked_exit.company_dvcd)}은/는"
@@ -97,23 +109,26 @@ class Commander:
         return None
 
     def process_enter(self, login_dto:LoginDTO):
-        reenter_enter_info = self.enter_mgr.check_exit_before(login_dto)
+        response_enter = self.enter_mgr.get_entrance_data(login_dto)
+        response_score = self.point_mgr.get_score_data(login_dto)
+
+        reenter_enter_info = self.enter_mgr.filter_latest_exit(response_enter, login_dto)
+        print(f"[log] reenter > {reenter_enter_info}")
         if reenter_enter_info is not None:  # 퇴장 여부가 있다는 것은 재입장이라는 뜻
             print("[log] 재입장 처리 진행")
             self.enter_mgr.set_to_reenter(reenter_enter_info)
 
             # 최대 포인트 충족 검증
-            if self.enter_mgr.validate_if_full(login_dto):
+            if self.enter_mgr.validate_if_fulled(response_score, login_dto):
                 comment = (f"{self.common_mgr.get_common_desc(login_dto.argv_company_dvcd)} 클래스에서\n"
                            f"획득 가능한 포인트는 모두 채우셨습니다\n다른 클래스를 방문해보시는 것은 어떨까요?")
             else:
-                comment = "재입장인 경우, 입장 포인트는 없습니다."
+                comment = f"{reenter_enter_info['seqno']}번째 재입장입니다."
 
             acc_score = self.score_mgr.get_current_point(login_dto)
             used_score = self.point_mgr.get_used_point(login_dto)
             scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, enter_dvcd_kor="재입장", used_score=used_score,
                                 acc_score=acc_score, current_score=0, comment=comment)
-            #ScreenMgr.draw_whole(self.screen_mgr, scr_dto)
             return scr_dto
 
         else:  # 최초 입장
@@ -129,12 +144,14 @@ class Commander:
             scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, enter_dvcd_kor="입장", used_score=used_score,
                                 acc_score=acc_score, current_score=current_score, comment=comment,
                                 require_time=8 if login_dto.argv_company_dvcd in BIG_ROOM_COMPANY else 3)
-            #ScreenMgr.draw_whole(self.screen_mgr, scr_dto)
 
             return scr_dto
 
     def validate_exit(self, recent_enter_info, login_dto):
 
+        print("[log] 퇴장 검증 진행")
+        response_score = self.point_mgr.get_score_data(login_dto)
+        print(f"[log] test > recent {recent_enter_info}")
         # 검증 : 입장 안 찍고 퇴장 먼저 하는 경우
         if recent_enter_info is None:
             comment = ""
@@ -149,7 +166,7 @@ class Commander:
 
             acc_score = self.score_mgr.get_current_point(login_dto)
             used_score = self.point_mgr.get_used_point(login_dto)
-            scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, enter_dvcd_kor="잘못된 리더기에 태그", used=used_score,
+            scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, enter_dvcd_kor="다른 리더기에 태그", used=used_score,
                                 acc_score=acc_score, current_score=0, comment=comment)
             return scr_dto
 
@@ -163,7 +180,7 @@ class Commander:
                            f"\n{self.common_mgr.get_common_desc(recent_enter_info.company_dvcd)}에서 퇴실 처리를 하지 않았습니다."
                            f"\n 입실 리더기에 ONLYONE BAND를 태그해주세요."
                            f"\n (❗️체류 시간에 따른 획득 포인트 불이익 발생 가능)")
-                scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, enter_dvcd_kor="잘못된 리더기에 태그", used=used_score,
+                scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, enter_dvcd_kor="다른 리더기에 태그", used=used_score,
                                     acc_score=acc_score, current_score=0, comment=comment)
                 return scr_dto
 
@@ -188,7 +205,7 @@ class Commander:
                             comment = (
                                 f"경험 시간이 {format(ScoreUtil.calculate_time_by_score(min_point, current_exp_point))} 부족합니다."
                                 f"\n그래도 퇴실하시려면 10초 이내에 한 번 더 태그해주세요"
-                                f"\n(❗️단,️ 0점으로 처리될 수 있습니다)")
+                                f"\n(❗️단,️ 입실시간은 0점으로 처리됩니다.)")
                             scr_dto = ScreenDTO(peer_company=login_dto.peer_company,
                                                 peer_name=login_dto.peer_name,
                                                 enter_dvcd_kor="최소 경험시간 미충족",
@@ -226,7 +243,7 @@ class Commander:
         elif current_exp_point > (max_point - bf_exp_point):
             screen_point = max_point - bf_exp_point
             update_point = max_point
-            _comment = (f"입실시간 기록완료 👍 받은 포인트 : {int(current_exp_point)}\n"
+            _comment = (f"입실시간 기록완료 👍 받은 포인트 : {int(screen_point)}\n"
                         f"{self.common_mgr.get_common_desc(login_dto.argv_company_dvcd)} 클래스에서\n"
                         f"획득 가능한 포인트는 모두 채우셨습니다")
 
@@ -289,7 +306,7 @@ class Commander:
         return scr_dto
 
     def process_welcome(self, login_dto:LoginDTO):
-        comment = (f"ONLYONE FAIR 공유회에 오신 것을 환영합니다! ⭐\n 지난 5주 간 정말 고생 많았어요 {login_dto.peer_name}님 ❤️\n오늘은 여정을 마무리하는 뜻 깊은 하루가 되길 바랄게요 🍀")
+        comment = f"ONLYONE FAIR 공유회에 오신 것을 환영합니다! ⭐\n 지난 5주 간 정말 고생 많았어요 {login_dto.peer_name}님 ❤️\n오늘은 여정을 마무리하는 뜻 깊은 하루가 되길 바랄게요 🍀"
         scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, used_score=0,
                             acc_score=0,
                             enter_dvcd_kor="🫡", current_score=0, comment=comment)

@@ -28,7 +28,6 @@ class EntranceRepository:
                 "id": entrance_info_dto.id
                 , "company_dvcd": entrance_info_dto.company_dvcd
                 , "enter_dvcd": entrance_info_dto.enter_dvcd
-    #            , "created_at": datetime.now(timezone.utc)
                 , "seqno" : entrance_info_dto.seqno
                 , "exit_yn": entrance_info_dto.exit_yn
             }
@@ -107,3 +106,6 @@ class EntranceRepository:
             .execute()
         )
         return MapperUtil.single_mapper(response, EntranceInfoDTO)
+
+    def get_entrance_data_by_id(self, _id):
+        return self.supabase.table("Entrance_Info").select("*").eq("id", _id).execute() or None

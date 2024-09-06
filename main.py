@@ -18,39 +18,24 @@ commander = injector.get(Commander)
 @app.route('/')
 def index():
     return render_template('index.html')
+    # return render_template('index.html', scr_dto=scr_dto)
 
 @socketio.on('nfc_data')
 def handle_nfc_data(response):
     print("[log] NFC 데이터 수신:", response)
-
-    # start_card_polling 함수가 5개의 변수를 반환한다고 가정
-    # var1, var2, var3, var4, var5 = commander.start_card_polling(response['data'])
     try:
         scr_dto: ScreenDTO = commander.start_card_polling(response['data'])
-
-        # 운영진 > redirect
         if scr_dto.peer_name == "운영진":
             print(f"[log] 운영진 렌더링 시작.. ")
             socketio.emit('polling_result', {
-                'comment': '! ! ! HAPPY BIRTHDAY TO YOU ! ! !',
-                'acc_score': '100',
-                'current_score': '100',
+                'comment': scr_dto.comment,
+                'acc_score': '',
+                'current_score': '☺︎',
                 'photo': '♾️',
-                'peer_name': '김도연님(QA/QC)^^',
-                'peer_company': 'TF의 빛과 소금! 김도연님 생일 축하해요 ㅎㅎ',
+                'peer_name': scr_dto.peer_name,
+                'peer_company': scr_dto.peer_company,
                 'enter_dvcd': '',
             })
-        # if scr_dto.peer_name == "운영진":
-        #     print(f"[log] 운영진 렌더링 시작.. ")
-        #     socketio.emit('polling_result', {
-        #         'comment': scr_dto.comment,
-        #         'acc_score': '',
-        #         'current_score': '☺︎',
-        #         'photo': '♾️',
-        #         'peer_name': scr_dto.peer_name,
-        #         'peer_company': scr_dto.peer_company,
-        #         'enter_dvcd': '',
-        #     })
         else:
             # 클라이언트에 반환된 결과를 전송
             socketio.emit('polling_result', {
@@ -64,7 +49,8 @@ def handle_nfc_data(response):
                 'require_time': scr_dto.require_time,
             })
 
-    except (httpx.RequestError, httpx.HTTPError, httpx.HTTPStatusError) as exc:
+    # HTTP 관련 에러 (연결, 타임아웃 등)은 pass
+    except (httpx.RequestError, httpx.HTTPError, httpx.HTTPStatusError):
         return None
 
 if __name__ == "__main__":
