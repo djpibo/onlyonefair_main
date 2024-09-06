@@ -31,9 +31,11 @@ class EnterMgr:
                # 2-퇴장을 찍고 오지 않은 경우를 반환
                and row["exit_yn"] == False
         ]
+        # 이번 입장이 최초인 경우, None
         if not filtered_data:
             return None
-        return filtered_data[0]
+        # False인 row는 여러 행이 나올 수 없다. 입장할 때 검증하도록 막기 때문이다.
+        return EntranceInfoDTO(**filtered_data[0])
 
     def check_exit_before(self, login_dto):
         return self.entrance_repo.fetch_latest_exit(login_dto.peer_id, login_dto.argv_company_dvcd)

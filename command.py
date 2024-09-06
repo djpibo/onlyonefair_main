@@ -1,5 +1,4 @@
 from api.supabase.model.common import LoginDTO
-from api.supabase.model.nfc import EntranceInfoDTO
 from api.supabase.model.point import ConsumeInfoDTO
 from api.supabase.model.presentation import ScreenDTO
 from api.supabase.model.quiz import ScoreInfoDTO
@@ -29,7 +28,7 @@ class Commander:
                                 acc_score=0, current_score=0, comment="촬영권 무한, 포인트 적용 대상 X")
 
             # 최초 태그 및 특정 순번 태그 인원 식별
-            self.common_mgr.count_up(nfc_uid) #TODO 마감치면서 올리기
+            # self.common_mgr.count_up(nfc_uid) #TODO 마감치면서 올리기
             argv1 = self.redis.get('company').decode('utf-8')
             argv2 = self.redis.get('enter').decode('utf-8')
 
@@ -66,14 +65,10 @@ class Commander:
         response_enter = self.enter_mgr.get_entrance_data(login_dto)
         response_score = self.point_mgr.get_score_data(login_dto)
 
-        _user_not_checked_exit = self.enter_mgr.filter_unchecked_exit(response_enter, login_dto)
+        user_not_checked_exit = self.enter_mgr.filter_unchecked_exit(response_enter, login_dto)
+        print(f"[log] test user_not_checked_exit > {user_not_checked_exit}")
 
-
-        print(f"[log] test user_not_checked_exit > {_user_not_checked_exit}")
-
-        if _user_not_checked_exit:  # 퇴장을 찍고 오지 않은 경우 이전 부스 입장 내역이 남아 있다
-
-            user_not_checked_exit = EntranceInfoDTO(**_user_not_checked_exit)
+        if user_not_checked_exit:  # 퇴장을 찍고 오지 않은 경우 이전 부스 입장 내역(미)이 남아 있다
             score = CommonUtil.get_min_time_by_company_dvcd(
                 user_not_checked_exit.company_dvcd) if ScoreUtil.check_min_stay_time(user_not_checked_exit) else 0
 
@@ -89,10 +84,10 @@ class Commander:
                 score=score
             )
             response = self.score_mgr.set_score(set_to_score_info)
-            print(f"[log] response > {response}")
+            print(f"[log] SQL upsert response > {response.data}")
 
             # GUI case 1-다른 클래스에서 퇴실 안찍고 입장한 경우
-            acc_score = self.score_mgr.sum_current_point(response_score) + response.data['score']
+            acc_score = self.score_mgr.sum_current_point(response_score) + response.data[0].get('score')
             used_score = self.point_mgr.get_used_point(login_dto)
             current_score = score
             comment = (f"{self.common_mgr.get_common_desc(user_not_checked_exit.company_dvcd)}은/는"
@@ -150,7 +145,6 @@ class Commander:
     def validate_exit(self, recent_enter_info, login_dto):
 
         print("[log] 퇴장 검증 진행")
-        response_score = self.point_mgr.get_score_data(login_dto)
         print(f"[log] test > recent {recent_enter_info}")
         # 검증 : 입장 안 찍고 퇴장 먼저 하는 경우
         if recent_enter_info is None:

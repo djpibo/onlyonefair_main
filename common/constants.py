@@ -1,3 +1,7 @@
+from typing import Dict
+
+from api.supabase.model.point import PeerInfoDTO
+
 ENTER_DVCD_ENTRANCE = 10
 ENTER_DVCD_EXIT = 11
 ENTER_DVCD_REENTER = 12
@@ -55,4 +59,9 @@ ENTER_EXIT_CODES = {
     '퇴장': 11,
     '재입장': 12,
     '마감': 19
+}
+
+NFC_ID_HASH_TABLE: Dict[str, PeerInfoDTO] = {
+    "123456789": PeerInfoDTO(id=1, company="Company A", name="John Doe", nfc_id="123456789"),
+    "987654321": PeerInfoDTO(id=2, company="Company B", name="Jane Doe", nfc_id="987654321"),
 }

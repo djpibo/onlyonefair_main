@@ -15,6 +15,7 @@ socketio = SocketIO(app, cors_allowed_origins="*")  # CORS 설정
 injector = Injector([ChungMuro()])
 commander = injector.get(Commander)
 
+# 기본 페이지 로딩
 @app.route('/')
 def index():
     return render_template('index.html')

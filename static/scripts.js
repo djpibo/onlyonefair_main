@@ -1,12 +1,5 @@
-// Socket.IO 클라이언트 연결
 const socket = io();
 
-// 서버로부터 'nfc_data' 이벤트를 수신했을 때 실행되는 함수
-socket.on('nfc_data', function(data) {
-    document.getElementById('nfc-data').innerText = `NFC 데이터: ${data.data}`;
-});
-
-// 서버로부터 'polling_result' 이벤트를 수신했을 때 실행되는 함수
 socket.on('polling_result', function(data) {
 
     console.log("polling- display")
