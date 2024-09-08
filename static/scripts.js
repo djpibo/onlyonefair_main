@@ -2,16 +2,10 @@ const socket = io();
 
 socket.on('polling_result', function(data) {
 
-    console.log("polling- display")
-
-    let accScoreText = `현재까지 받은 포인트\n\n ${data.acc_score}`;
-    if (data.current_score !== 0) {
-        accScoreText += ` (+${data.current_score})`;
-    }
     document.getElementById('comment').innerText = data.comment;
-    document.getElementById('title').innerText = `${data.peer_company}\n ${data.peer_name}님, ${data.enter_dvcd}`;
+    document.getElementById('title').innerText = `${data.peer_company}\n ${data.peer_name}, ${data.enter_dvcd}`;
     document.getElementById('photo').innerText = `사용가능한 촬영권\n\n  ${data.photo}`;
-    document.getElementById('acc_score').innerText = accScoreText;
+    document.getElementById('acc_score').innerText = `현재까지 받은 포인트\n\n ${data.acc_score}${data.current_score}`;
 
     const now = new Date();
     const futureTime = new Date(now.getTime() + data.require_time * 60 * 1000);
@@ -41,17 +35,4 @@ function updateClock(futureTime) {
     const seconds = padTime(now.getSeconds());
     const formattedTime = `${hours}:${minutes}:${seconds}`;
     document.getElementById('clock').innerText = formattedTime;
-
-    // 현재 시각과 futureTime의 차이를 계산
-//    let timeDifference = futureTime - now;
-//
-//    if (timeDifference <= 0) {
-//        timeDifference = 0; // 0 이하일 경우 0으로 고정
-//    }
-//
-//    const diffHours = padTime(Math.floor((timeDifference / (1000 * 60 * 60)) % 24));
-//    const diffMinutes = padTime(Math.floor((timeDifference / (1000 * 60)) % 60));
-//    const diffSeconds = padTime(Math.floor((timeDifference / 1000) % 60));
-//    const formattedDifference = `${diffHours}:${diffMinutes}:${diffSeconds}`;
-//    document.getElementById('time-difference').innerText = `남은 시간: ${formattedDifference}`;
 }

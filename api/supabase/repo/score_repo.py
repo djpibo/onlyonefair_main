@@ -159,4 +159,16 @@ class ScoreRepository:
     def get_data_by_id(self, peer_id):
         return self.supabase.table("Score_Info").select("*").eq("id", peer_id).execute().data
 
+    def update_misson_score(self, peer_id):
+        query = (
+            self.supabase.table("Score_Info")
+            .upsert(
+                {"id": peer_id,
+                 "score": PHOTO_MISSON_POINT,
+                 "quiz_dvcd": QUIZ_DVCD_PHOTO,
+                 "company_dvcd": ENTER_EXIT_CODES.get('포토미션')}
+                    , ignore_duplicates=True)
+            .execute()
+        )
+
 

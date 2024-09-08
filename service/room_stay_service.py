@@ -159,5 +159,8 @@ class ScoreMgr:
     def set_entrance_point(self, login_dto):
         self.score_repo.update_entrance_score(login_dto.peer_id, login_dto.argv_company_dvcd)
 
+    def set_misson_point(self, login_dto):
+        return self.score_repo.update_misson_score(login_dto.peer_id)
+
     def validator(self, login_dto):
         self.score_repo.update_entrance_score(login_dto.peer_id, login_dto.argv_company_dvcd)

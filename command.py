@@ -21,37 +21,36 @@ class Commander:
     def start_card_polling(self, nfc_uid):
 
         if nfc_uid is not None:
-            # 각 사 교육지도자인 경우, skip
             if self.common_mgr.validate_teacher(nfc_uid):
+                comment = f"바쁘신 와중에도 ONLYONE FAIR 공유회를 위해\n 귀한 시간 내주신 점 감사드립니다 🫡"
                 print(f"[log] 운영진 혹은 TF 인원입니다.")
-                return ScreenDTO(peer_company="ONLYONE FAIR", peer_name="운영진", enter_dvcd_kor="", used=0,
-                                acc_score=0, current_score=0, comment="촬영권 무한, 포인트 적용 대상 X")
+                return ScreenDTO(peer_company="ONLYONE FAIR", peer_name="운영진", enter_dvcd_kor="", used_score=0,
+                                acc_score=0, current_score=0, comment=comment)
 
-            # 최초 태그 및 특정 순번 태그 인원 식별
             # self.common_mgr.count_up(nfc_uid) #TODO 마감치면서 올리기
             argv1 = self.redis.get('company').decode('utf-8')
             argv2 = self.redis.get('enter').decode('utf-8')
 
-            print(f"[log] test > argv2 {argv2}")
-
             login_dto = self.common_mgr.login_setter(argv1, argv2, nfc_uid)
 
-            print(f"[log] test > argv2 {login_dto.enter_dvcd}")
-            if login_dto.enter_dvcd == ENTER_DVCD_ENTRANCE:
+            if login_dto.enter_dvcd == ENTER_EXIT_CODES.get('입장'):
                 scr_dto = self.validate_enter(login_dto)  # 입장 검증
                 if scr_dto is not None:
                     return scr_dto
                 return self.process_enter(login_dto)  # 입장 처리
 
-            elif login_dto.enter_dvcd == ENTER_DVCD_EXIT:
+            elif login_dto.enter_dvcd == ENTER_EXIT_CODES.get('퇴장'):
                 recent_enter_info = self.enter_mgr.get_latest_enter(login_dto)
                 scr_dto = self.validate_exit(recent_enter_info, login_dto)
                 if scr_dto is not None:
                     return scr_dto
                 return self.process_exit(login_dto, recent_enter_info)  # 퇴장 처리
 
-            elif login_dto.enter_dvcd == ENTER_DVCD_PHOTO:
+            elif login_dto.enter_dvcd == ENTER_EXIT_CODES.get('촬영권'):
                 return self.point_consumer(login_dto)
+
+            elif login_dto.enter_dvcd == ENTER_EXIT_CODES.get('포토미션'):
+                return self.misson_complete(login_dto)
 
             else:
                 return self.process_welcome(login_dto)
@@ -90,9 +89,9 @@ class Commander:
             acc_score = self.score_mgr.sum_current_point(response_score) + response.data[0].get('score')
             used_score = self.point_mgr.get_used_point(login_dto)
             current_score = score
-            comment = (f"{self.common_mgr.get_common_desc(user_not_checked_exit.company_dvcd)}은/는"
-                       f" 최소 점수({current_score})로 퇴장 처리됐습니다.\n"
-                       f" 입장 처리를 위해, 한 번 더 ONLYONE BAND를 태그해주세요.")
+            comment = (f"🔔방금 다녀오신 {self.common_mgr.get_common_desc(user_not_checked_exit.company_dvcd)} 클래스는 "
+                       f"퇴실 태그를 하지 않아서   ({current_score}) 포인트로 퇴장 처리됐습니다.\n"
+                       f"현재 계신 클래스의 입장 처리를 위해\n 한 번 더 ONLYONE BAND를 태그해주세요.")
             scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, used_score=used_score, acc_score=acc_score,
                                 enter_dvcd_kor="입장대기", current_score=current_score, comment=comment)
 
@@ -116,9 +115,9 @@ class Commander:
             # 최대 포인트 충족 검증
             if self.enter_mgr.validate_if_fulled(response_score, login_dto):
                 comment = (f"{self.common_mgr.get_common_desc(login_dto.argv_company_dvcd)} 클래스에서\n"
-                           f"획득 가능한 포인트는 모두 채우셨습니다\n다른 클래스를 방문해보시는 것은 어떨까요?")
+                           f"획득 가능한 포인트는 모두 채우셨습니다 👍\n다른 클래스를 방문해보시는 것은 어떨까요? 🐥")
             else:
-                comment = f"{reenter_enter_info['seqno']}번째 재입장입니다."
+                comment = f"{reenter_enter_info['seqno']+1}번째 입장입니다."
 
             acc_score = self.score_mgr.get_current_point(login_dto)
             used_score = self.point_mgr.get_used_point(login_dto)
@@ -135,7 +134,7 @@ class Commander:
             acc_score = self.score_mgr.get_current_point(login_dto)
             used_score = self.point_mgr.get_used_point(login_dto)
             current_score = 50
-            comment = "입장 포인트 50점 획득"
+            comment = "입장 포인트 50점 획득 👍"
             scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, enter_dvcd_kor="입장", used_score=used_score,
                                 acc_score=acc_score, current_score=current_score, comment=comment,
                                 require_time=8 if login_dto.argv_company_dvcd in BIG_ROOM_COMPANY else 3)
@@ -151,8 +150,8 @@ class Commander:
             comment = ""
             if CommonUtil.is_less_than_one_minute_interval(self.enter_mgr.get_latest_exit(login_dto)):
                 print(f"[log] 연속 거래 방지")
-                comment = (f"{login_dto.peer_name}님은 이미 퇴장 처리 되었습니다"
-                           f"\n다른 클래스를 방문해보는 것은 어떨까요?")
+                comment = (f"⚠️{login_dto.peer_name}님은 이미 퇴장 처리 되었습니다"
+                           f"\n다른 클래스를 방문해보는 것은 어떨까요? 🐥")
 
             else:
                 print("[error] 입장 먼저 하세요.")
@@ -170,7 +169,7 @@ class Commander:
                 print("[error] (퇴장 검증) 입장 클래스와 퇴장 클래스가 다른 경우 ")
                 acc_score = self.score_mgr.get_current_point(login_dto)
                 used_score = self.point_mgr.get_used_point(login_dto)
-                comment = (f"{login_dto.peer_name}님"
+                comment = (f"⚠️{login_dto.peer_name}님"
                            f"\n{self.common_mgr.get_common_desc(recent_enter_info.company_dvcd)}에서 퇴실 처리를 하지 않았습니다."
                            f"\n 입실 리더기에 ONLYONE BAND를 태그해주세요."
                            f"\n (❗️체류 시간에 따른 획득 포인트 불이익 발생 가능)")
@@ -197,7 +196,7 @@ class Commander:
                             acc_score = self.score_mgr.get_current_point(login_dto)
                             used_score = self.point_mgr.get_used_point(login_dto)
                             comment = (
-                                f"경험 시간이 {format(ScoreUtil.calculate_time_by_score(min_point, current_exp_point))} 부족합니다."
+                                f"⚠️경험 시간이 {format(ScoreUtil.calculate_time_by_score(min_point, current_exp_point))} 부족합니다."
                                 f"\n그래도 퇴실하시려면 10초 이내에 한 번 더 태그해주세요"
                                 f"\n(❗️단,️ 입실시간은 0점으로 처리됩니다.)")
                             scr_dto = ScreenDTO(peer_company=login_dto.peer_company,
@@ -231,7 +230,7 @@ class Commander:
             screen_point = 0
             update_point = max_point
             _comment = (f"{self.common_mgr.get_common_desc(login_dto.argv_company_dvcd)} 클래스에서\n"
-                        f"획득 가능한 포인트는 모두 채우셨습니다\n다른 클래스를 방문해보시는 것은 어떨까요?")
+                        f"획득 가능한 포인트는 모두 채우셨습니다 👍\n다른 클래스를 방문해보시는 것은 어떨까요? 🐥")
 
         # 만점을 넘은 경우, 상한 포인트로 제한
         elif current_exp_point > (max_point - bf_exp_point):
@@ -275,24 +274,20 @@ class Commander:
     def point_consumer(self, login_dto):
         consumer = login_dto.peer_id
 
-        # 1 연속 거래 방지
-        if CommonUtil.is_less_than_one_minute_interval(self.point_mgr.get_latest_consume(login_dto)):
-            print(f"[log] 연속 거래 방지")
-
-        # 2 누적 포인트에 기반해서 계산
+        # 1 누적 포인트에 기반해서 계산
         current_point = self.score_mgr.get_current_point(LoginDTO(peer_id=consumer, argv_company_dvcd=99))
         used_score = self.point_mgr.get_used_point(login_dto)
 
         comment = ""
-        # 2-1 조건 검증
-        if (current_point - used_score)> CONSUME_PHOTO_POINT:
-
+        # 2 조건 검증
+        if (current_point - used_score) > CONSUME_PHOTO_POINT:
             # 3 포인트 차감 처리 (insert++, used_point)
             consume_dto = ConsumeInfoDTO(id=consumer, consume_dvcd=CONSUME_PHOTO_DVCD, used_score=CONSUME_PHOTO_POINT)
             self.point_mgr.consume_point(consume_dto)
-            comment = " 📸 촬영권 1매 사용:)"
+            comment = (" 📸 촬영권 1매 사용 :)\n"
+                       f"(총 {int(current_point/CONSUME_PHOTO_POINT)}매 중 {self.redis.incr(f'photo_consume:{login_dto.peer_id}')}매 사용)")
         else:
-            comment = "❗️포인트가 부족합니다:("
+            comment = "❗사용 가능한 촬영권이 부족합니다 :("
 
         acc_score = self.score_mgr.get_current_point(login_dto)
         scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, enter_dvcd_kor="촬영권 사용", used_score=used_score,
@@ -303,9 +298,26 @@ class Commander:
         comment = f"ONLYONE FAIR 공유회에 오신 것을 환영합니다! ⭐\n 지난 5주 간 정말 고생 많았어요 {login_dto.peer_name}님 ❤️\n오늘은 여정을 마무리하는 뜻 깊은 하루가 되길 바랄게요 🍀"
         scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, used_score=0,
                             acc_score=0,
-                            enter_dvcd_kor="🙂", current_score=0, comment=comment)
+                            enter_dvcd_kor="😊", current_score=0, comment=comment)
 
         print("[log] 출석 처리")
+
+        return scr_dto
+
+    def misson_complete(self, login_dto:LoginDTO):
+        self.score_mgr.set_misson_point(login_dto)
+        comment = f"디지털비전보드 미션을 수행하셨습니다! ⭐\n 200 포인트 획득 🍀"
+        current_score = PHOTO_MISSON_POINT
+        if self.redis.sismember('participated_users', login_dto.peer_id):
+            comment = f"이미 디지털비전보드 미션을 수행하셨습니다 ⭐\n 클래스 방문과 퀴즈 참여로 추가 포인트를 획득하세요 🐥"
+            current_score = 0
+        self.redis.sadd('participated_users', login_dto.peer_id)
+        acc_score = self.score_mgr.get_current_point(login_dto)
+        used_score = self.point_mgr.get_used_point(login_dto)
+        scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, used_score=used_score,
+                            acc_score=acc_score,
+                            enter_dvcd_kor="미션 완료 😊", current_score=current_score, comment=comment)
+        print("[info] 디지털비전보드 미션 수행")
 
         return scr_dto
 
