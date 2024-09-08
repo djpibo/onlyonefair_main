@@ -5,7 +5,7 @@ from api.supabase.repo.common_repo import CommonRepository
 from api.supabase.repo.entrance_repo import EntranceRepository
 from api.supabase.repo.score_repo import ScoreRepository
 from common.constants import *
-from common.util import CommonUtil, MapperUtil
+from common.util import CommonUtil
 
 
 class EnterMgr:
@@ -29,7 +29,7 @@ class EnterMgr:
                # 1-현재 입장한 클래스가 아닌 곳에서,
                and row["company_dvcd"] != login_dto.argv_company_dvcd
                # 2-퇴장을 찍고 오지 않은 경우를 반환
-               and row["exit_yn"] == False
+               and not row["exit_yn"]
         ]
         # 이번 입장이 최초인 경우, None
         if not filtered_data:
@@ -78,7 +78,7 @@ class EnterMgr:
         self.entrance_repo.upsert_entrance_data(dto)
 
     def get_latest_enter(self, login_dto):
-        print(f"[log] 서비스 호출 : 최근 입장 데이터 가져오기")
+        print(f"[INFO] 서비스 호출 : 최근 입장 데이터 가져오기")
         return self.entrance_repo.check_entered_to_entrance_info(login_dto.peer_id, login_dto.argv_company_dvcd)
 
     def get_latest_exit(self, login_dto):
@@ -94,8 +94,7 @@ class EnterMgr:
         return bf_exp_score >= CommonUtil.get_max_time_by_company_dvcd(login_dto.argv_company_dvcd)
 
     def validate_if_fulled(self, response, login_dto):
-        print("[log] 서비스 호출 : 체류시간이 상한 포인트을 넘겼는지 검증")
-        print(f"[log] respnse > {response}")
+        print("[INFO] 서비스 호출 : 체류시간이 상한 포인트을 넘겼는지 검증하기")
         total_score = sum(
             record['score']
             for record in response
@@ -159,8 +158,8 @@ class ScoreMgr:
     def set_entrance_point(self, login_dto):
         self.score_repo.update_entrance_score(login_dto.peer_id, login_dto.argv_company_dvcd)
 
-    def set_misson_point(self, login_dto):
-        return self.score_repo.update_misson_score(login_dto.peer_id)
+    def set_mission_point(self, login_dto):
+        return self.score_repo.update_mission_score(login_dto.peer_id)
 
     def validator(self, login_dto):
         self.score_repo.update_entrance_score(login_dto.peer_id, login_dto.argv_company_dvcd)

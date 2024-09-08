@@ -20,7 +20,7 @@ def index():
     return render_template('index.html')
 
 
-@socketio.on('nfc_data', namespace='/')
+@socketio.on('nfc_data')
 def handle_nfc_data(response):
     print("[INFO] NFC 데이터 수신:", response)
     scr_dto: ScreenDTO = commander.start_card_polling(response['data'])

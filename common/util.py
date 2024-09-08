@@ -15,19 +15,19 @@ class CommonUtil:
 
     @staticmethod
     def get_max_time_by_company_dvcd(company_dvcd):
-        print("[log] 공통 유틸 : 각 클래스별 최대 포인트 가져오기")
+        print("[INFO] common util : 클래스별 최대 포인트 조회")
         return MAX_TIME_POINT_BIG if company_dvcd in BIG_ROOM_COMPANY else MAX_TIME_POINT_SMALL
 
     @staticmethod
     def calculate_time_interval(given_time):
-        print("[log] 공통 유틸 : 체류 시간 계산하기")
+        print("[INFO] common util : 체류 시간 계산")
         seoul_tz = pytz.timezone('Asia/Seoul')
         current_time = datetime.now(seoul_tz)
         return int(current_time.timestamp() - given_time.timestamp())
 
     @staticmethod
     def is_less_than_one_minute_interval(given_time):
-        print("[log] 공통 유틸 : 연속 거래 방지하기")
+        print("[INFO] common util : 연속 거래 방지")
         if given_time is None:
             return False
         return CommonUtil.calculate_time_interval(given_time.created_at) < 60
