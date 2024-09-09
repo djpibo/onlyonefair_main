@@ -35,6 +35,10 @@ class CommonMgr:
         if self.peer_repo.check_if_teacher(nfc_id) is None:
             return True
 
+    def validate_id(self, _id):
+        if self.peer_repo.fetch_peer_info_by_id(_id) is None:
+            return True
+
     def login_setter(self, argv1, argv2, nfc_uid):
         comp_dvcd = COMPANY_CODES.get(argv1)
         enter_dvcd = ENTER_EXIT_CODES.get(argv2)
@@ -43,3 +47,11 @@ class CommonMgr:
         peer_name = response.name
         peer_id = response.id
         return LoginDTO(peer_id=peer_id, argv_company_dvcd=comp_dvcd, peer_name=peer_name, peer_company=peer_company, enter_dvcd=enter_dvcd)
+
+    def login_setter_keyin(self, argv1, argv2, _id):
+        comp_dvcd = COMPANY_CODES.get(argv1)
+        enter_dvcd = ENTER_EXIT_CODES.get(argv2)
+        response = self.peer_repo.fetch_peer_info_by_id(_id)
+        peer_company = response.company
+        peer_name = response.name
+        return LoginDTO(peer_id=_id, argv_company_dvcd=comp_dvcd, peer_name=peer_name, peer_company=peer_company, enter_dvcd=enter_dvcd)

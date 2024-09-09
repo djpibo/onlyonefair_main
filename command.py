@@ -23,17 +23,28 @@ class Commander:
     def start_card_polling(self, nfc_uid):
 
         if nfc_uid is not None:
-            if self.common_mgr.validate_teacher(nfc_uid):
-                comment = f"바쁘신 와중에도 ONLYONE FAIR 공유회를 위해\n 귀한 시간 내주신 점 감사드립니다 🫡"
-                print(f"[INFO] 운영진 혹은 TF 인원입니다.")
-                return ScreenDTO(peer_company="ONLYONE FAIR", peer_name="운영진", enter_dvcd_kor="", used_score=0,
-                                 acc_score=0, current_score=0, comment=comment)
+
+            if not nfc_uid.startswith('k'):
+                if self.common_mgr.validate_teacher(nfc_uid):
+                    comment = f"바쁘신 와중에도 ONLYONE FAIR 공유회를 위해\n 귀한 시간 내주신 점 감사드립니다 🙂"
+                    print(f"[INFO] 운영진 혹은 TF 인원입니다.")
+                    return ScreenDTO(peer_company="ONLYONE FAIR", peer_name="운영진", enter_dvcd_kor="", used_score=0,
+                                     acc_score=0, current_score=0, comment=comment)
+            else:
+                if self.common_mgr.validate_id(nfc_uid[1:]):
+                    comment = f"존재하지 않는 사번입니다. 다시 한 번 입력해주세요 🙂"
+                    print(f"[INFO] 존재하지 않는 사번입니다.")
+                    return ScreenDTO(peer_company="ONLYONE FAIR", peer_name="누구세요!", enter_dvcd_kor="", used_score=0,
+                                     acc_score=0, current_score=0, comment=comment)
 
             # self.common_mgr.count_up(nfc_uid) #TODO 마감치면서 올리기
             argv1 = self.redis.get('company').decode('utf-8')
             argv2 = self.redis.get('enter').decode('utf-8')
 
-            login_dto = self.common_mgr.login_setter(argv1, argv2, nfc_uid)
+            if not nfc_uid.startswith('k'):
+                login_dto = self.common_mgr.login_setter(argv1, argv2, nfc_uid)
+            else:
+                login_dto = self.common_mgr.login_setter_keyin(argv1, argv2, nfc_uid[1:])
 
             if login_dto.enter_dvcd == ENTER_EXIT_CODES.get('입장'):
                 scr_dto = self.validate_enter(login_dto)  # 입장 검증
@@ -334,6 +345,6 @@ class Commander:
         scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, used_score=used_score,
                             acc_score=acc_score,
                             enter_dvcd_kor="미션 완료 😊", current_score=current_score, comment=comment)
-        print("[info] 디지털비전보드 미션 수행")
+        print("[INFO] 디지털비전보드 미션 수행")
 
         return scr_dto

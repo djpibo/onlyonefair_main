@@ -158,3 +158,44 @@ hr.hr-14 {
     margin: 10px 0; /* 선의 상하 여백 */
     animation: blink-border 1s ease-in-out infinite; /* 테두리 깜빡이는 애니메이션 */
 }
+
+ /* 폼 스타일 */
+form {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* 요소 간격 */
+}
+
+/* 입력 필드 스타일 */
+input {
+    padding: 15px;
+    font-size: 50px; /* 폰트 크기 */
+    border: 1px solid #ddd;
+    border-radius: 8px; /* 둥근 모서리 */
+    width: 100%;
+    box-sizing: border-box; /* 패딩을 포함하여 너비 설정 */
+    text-align: center; /* 입력 텍스트와 placeholder 가운데 정렬 */
+    caret-color: #0056b3; /* 커서 색상 */
+    caret-width: 3px; /* 커서 두께 (일부 브라우저에서 지원) */
+}
+
+/* 버튼 스타일 */
+button {
+    padding: 15px;
+    font-size: 50px; /* 폰트 크기 */
+    border: none;
+    background-color: #ff7e5f; /* 버튼 배경색 */
+    color: #ffffff; /* 버튼 글자색 */
+    border-radius: 8px; /* 둥근 모서리 */
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.3s;; /* 부드러운 색상 변화 */
+}
+
+button:hover {
+    background-color: #0056b3; /* 버튼 hover 색상 */
+}
+button:active {
+    transform: scale(1.1); /* 살짝 확대 */
+    background-color: #004080; /* 버튼 눌렸을 때의 색상 */
+}
