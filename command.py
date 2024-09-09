@@ -34,7 +34,7 @@ class Commander:
                 if self.common_mgr.validate_id(nfc_uid[1:]):
                     comment = f"존재하지 않는 사번입니다. 다시 한 번 입력해주세요 🙂"
                     print(f"[INFO] 존재하지 않는 사번입니다.")
-                    return ScreenDTO(peer_company="ONLYONE FAIR", peer_name="누구세요!", enter_dvcd_kor="", used_score=0,
+                    return ScreenDTO(peer_company="ONLYONE FAIR", peer_name="누구세요! 손", enter_dvcd_kor="", used_score=0,
                                      acc_score=0, current_score=0, comment=comment)
 
             # self.common_mgr.count_up(nfc_uid) #TODO 마감치면서 올리기
