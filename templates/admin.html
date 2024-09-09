@@ -33,5 +33,11 @@
     </div>
     <script src="https://cdn.socket.io/4.3.2/socket.io.min.js" defer></script>
     <script src="{{ url_for('static', filename='scripts.js') }}" defer></script>
+    <script>
+        // 페이지 로드 후 5초 뒤에 메인 페이지로 리다이렉트
+        setTimeout(function() {
+            window.location.href = "/";
+        }, 3000);
+    </script>
 </body>
 </html>
