@@ -208,7 +208,7 @@ class Commander:
                                 f"\n(❗️단,️ 입실시간은 0점으로 처리됩니다.)")
                             scr_dto = ScreenDTO(peer_company=login_dto.peer_company,
                                                 peer_name=login_dto.peer_name,
-                                                enter_dvcd_kor="최소 경험시간 미충족",
+                                                enter_dvcd_kor="최소 경험시간 부족",
                                                 used=used_score,
                                                 acc_score=acc_score,
                                                 current_score=0,
