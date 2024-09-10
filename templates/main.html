@@ -10,25 +10,26 @@
             document.getElementById('serial-number').focus();
         };
     </script>
+    <script src="https://cdn.socket.io/4.3.2/socket.io.min.js" defer></script>
+    <script src="{{ url_for('static', filename='scripts.js') }}" defer></script>
 </head>
 <div class="container">
         <div class="title-container">
             <div class="title">
-              <h1>NFC를 태그해주세요!</h1>
-            </div>
-            <div class="clock">
-                <h2 id="clock">00:00:00</h2>
-                <p id="future-time" style="display: none;">08:00 후 시각: --:--:--</p>
+              <h1>{{scr_dto.argv_comp}}, {{scr_dto.argv_enter}}</h1>
             </div>
         </div>
         <hr class="hr-14">
         <div class="comment">
-          <h1 id="comment">
-            <form action="{{ url_for('submit_serial_number') }}" method="POST">
-                <input type="text" id="serial-number" name="serial-number" placeholder="키보드로 입력하기" required>
-                <button type="submit">GO!</button>
-            </form>
-          </h1>
+            <h1>NFC 리더기에 ONLYONE BAND를 태그해주세요 <br>태그가 안된다면 키보드로 사번을 입력하세요. </h1>
+        </div>
+        <div class="comment">
+            <h1>
+                <form action="{{ url_for('submit_serial_number') }}" method="POST">
+                    <input type="text" id="serial-number" name="serial-number" placeholder="키보드로 입력하기" required>
+                    <button type="submit">GO!</button>
+                </form>
+            </h1>
         </div>
     </div>
 </html>

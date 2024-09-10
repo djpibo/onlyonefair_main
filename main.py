@@ -18,7 +18,8 @@ commander = injector.get(Commander)
 
 @app.route('/')
 def main():
-    return render_template('main.html')
+    return_argv = commander.return_argv()
+    return render_template('main.html', scr_dto=return_argv)
 
 @app.route('/index')
 def index():
