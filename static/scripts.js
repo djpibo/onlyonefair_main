@@ -1,9 +1,7 @@
 const socket = io();
 
 socket.on('polling_result', function(data) {
-
     console.log("polling_result calls")
-
     localStorage.setItem('pollingData', JSON.stringify(data));
     window.location.href = "/index";
 });
@@ -37,7 +35,29 @@ window.onload = function() {
     } else {
         console.log("No polling data found in localStorage");
     }
+
+    let countdown = 3;
+    const timerElement = document.getElementById('timer');
+    const interval = setInterval(function() {
+        timerElement.innerText = `${countdown}s lefts`;
+        if (countdown === 0) {
+            clearInterval(interval);
+        }
+        countdown--;
+    }, 1000);
 };
+
+function showClock(data){
+    if (data.enter_dvcd == '입장') {
+        document.getElementById('future-time').style.display = 'block';
+        document.getElementById('future-time').innerText
+        = `${padTime(futureTime.getHours())}:${padTime((futureTime.getMinutes() + 1) % 60)} 부터 포인트 획득 가능`;
+    }
+    else{
+        document.getElementById('future-time').style.display = 'none';
+    }
+    setInterval(() => updateClock(futureTime), 1000);
+}
 
 function padTime(unit) {
     return String(unit).padStart(2, '0');

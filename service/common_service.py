@@ -28,8 +28,8 @@ class CommonMgr:
     def get_common_desc(self, company_dvcd):
         return COMPANY_NAMES.get(company_dvcd)
 
-    def count_up(self, nfc_uid):
-        self.common_repo.insert_tag_count(CountInfoDTO(id=self.get_peer_id(nfc_uid)))
+    def count_up(self, _id):
+        self.common_repo.insert_tag_count(_id)
 
     def validate_teacher(self, nfc_id):
         if self.peer_repo.check_if_teacher(nfc_id) is None:

@@ -13,8 +13,7 @@
                 <h1 id="title"> {{scr_dto.peer_company}}<br> {{scr_dto.peer_name}}, {{scr_dto.enter_dvcd}}</h1>
             </div>
             <div class="clock">
-                <h2 id="clock">00:00:00</h2>
-                <p id="future-time" style="display: none;">08:00 후 시각: --:--:--</p>
+                <p id="timer">4s lefts</p>
             </div>
         </div>
         <hr class="hr-14">
@@ -34,7 +33,6 @@
     <script src="https://cdn.socket.io/4.3.2/socket.io.min.js" defer></script>
     <script src="{{ url_for('static', filename='scripts.js') }}" defer></script>
     <script>
-        // 페이지 로드 후 5초 뒤에 메인 페이지로 리다이렉트
         setTimeout(function() {
             window.location.href = "/";
         }, 5000);

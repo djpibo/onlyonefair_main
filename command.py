@@ -48,10 +48,13 @@ class Commander:
             argv1 = self.redis.get('company').decode('utf-8')
             argv2 = self.redis.get('enter').decode('utf-8')
 
+            login_dto = None
             if not nfc_uid.startswith('k'):
                 login_dto = self.common_mgr.login_setter(argv1, argv2, nfc_uid)
             else:
                 login_dto = self.common_mgr.login_setter_keyin(argv1, argv2, nfc_uid[1:])
+
+            print(f"login_dto >> {login_dto}")
 
             if login_dto.enter_dvcd == ENTER_EXIT_CODES.get('입장'):
                 scr_dto = self.validate_enter(login_dto)  # 입장 검증
@@ -222,7 +225,7 @@ class Commander:
                             used_score = self.point_mgr.get_used_point(login_dto)
                             comment = (
                                 f"⚠️경험 시간이 {format(ScoreUtil.calculate_time_by_score(min_point, current_exp_point))} 부족합니다."
-                                f"\n그래도 퇴실하시려면 10초 이내에 한 번 더 태그해주세요"
+                                f"\n그래도 퇴실하시려면 10초 이내에 한 번 더 태그(또는 key-in)해주세요"
                                 f"\n(❗️단,️ 입실시간은 0점으로 처리됩니다.)")
                             scr_dto = ScreenDTO(peer_company=login_dto.peer_company,
                                                 peer_name=login_dto.peer_name,
@@ -311,16 +314,9 @@ class Commander:
             # 3 포인트 차감 처리 - 누적 포인트(score)를 차감하지 않고 사용 포인트(used_score)를 추가해서
             # 두 포인트의 차이로 사용 가능한 촬영권을 계산
             consume_dto = ConsumeInfoDTO(id=consumer, consume_dvcd=CONSUME_PHOTO_DVCD, used_score=CONSUME_PHOTO_POINT)
-
-            value = self.redis.get(login_dto.peer_id)
-            if value is None:
-                self.redis.set(login_dto.peer_id, 0, ex=10)
-                comment = ("사용가능한 촬영권을 확인해주세요 🙂\n"
-                           "네컷사진/거울포토존을 이용하시려면 10초 이내에 태그해주세요 :)\n")
-            else:
-                self.point_mgr.consume_point(consume_dto)
-                comment = (" 📸 촬영권 1매 사용 !! 이쁜 추억 남기세요 !! ♥️"
-                           f"(총 {int(current_point / CONSUME_PHOTO_POINT)}매 중 {self.redis.incr(f'photo_consume:{login_dto.peer_id}')}매 사용)")
+            self.point_mgr.consume_point(consume_dto)
+            comment = (" 📸 촬영권 1매 사용 !! 이쁜 추억 남기세요 !! ♥️"
+                       f"(총 {int(current_point / CONSUME_PHOTO_POINT)}매 중 {self.redis.incr(f'photo_consume:{login_dto.peer_id}')}매 사용)")
         else:
             comment = "❗사용 가능한 촬영권이 부족합니다 :("
 
@@ -331,6 +327,7 @@ class Commander:
         return scr_dto
 
     def process_welcome(self, login_dto: LoginDTO):
+        self.common_mgr.count_up(login_dto.peer_id)
         print("[INFO] 출석 처리")
         comment = f"ONLYONE FAIR 공유회에 오신 것을 환영합니다! ⭐\n 지난 5주 간 정말 고생 많았어요 {login_dto.peer_name}님 ❤️\n오늘은 여정을 마무리하는 뜻 깊은 하루가 되길 바랄게요 🍀"
         scr_dto = ScreenDTO(peer_company=login_dto.peer_company, peer_name=login_dto.peer_name, used_score=0,
