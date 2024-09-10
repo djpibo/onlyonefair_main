@@ -87,7 +87,6 @@ body, html {
     margin: 20px auto; /* 상자 바깥 여백 설정 및 중앙 정렬 */
     font-size: 40px;
     text-align: center;
-    font-style: italic;
     color: #BBB;
     letter-spacing: -0.005em;
     word-spacing: 1px;

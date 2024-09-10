@@ -18,7 +18,7 @@
         </div>
         <hr class="hr-14">
         <div class="comment">
-          <h1 id="comment">{{scr_dto.comment}}</h1>
+          <h1 id="comment">{{scr_dto.comment| replace('\n', '<br>') | safe }}</h1>
         </div>
         <hr class="hr-14">
         <div class="square-container">
