@@ -6,7 +6,7 @@ class CommonRepository:
     def __init__(self):
         self.supabase = connect_supabase()
 
-    # main.py arguments 검증에 사용
+    # _main.py arguments 검증에 사용
     def get_cmn_code_with_nm_desc(self, cmn_nm, cmn_desc):
         response = (
             self.supabase.table("Common_Code")

@@ -20,6 +20,10 @@ class Commander:
         self.point_mgr = point_mgr
         self.redis = connect_redis()
 
+    def set_session_info(self, _company, _enter):
+        self.redis.set('company', _company)
+        self.redis.set('enter', _enter)
+
     def return_argv(self):
         scr_dto = {
             'argv_comp': self.redis.get('company').decode('utf-8'),
@@ -35,6 +39,7 @@ class Commander:
                 if self.common_mgr.validate_teacher(nfc_uid):
                     comment = f"바쁘신 와중에도 ONLYONE FAIR 공유회를 위해\n 귀한 시간 내주신 점 감사드립니다 🙂"
                     print(f"[INFO] 운영진 혹은 TF 인원입니다.")
+
                     return ScreenDTO(peer_company="ONLYONE FAIR", peer_name="운영진", enter_dvcd_kor="", used_score=0,
                                      acc_score=0, current_score=0, comment=comment)
             else:
