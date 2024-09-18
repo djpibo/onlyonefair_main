@@ -1,4 +1,4 @@
-from api.supabase.model.point import PeerInfoDTO
+from api.supabase.model import PeerInfoDTO
 from common.util import MapperUtil
 from config.connect import connect_supabase
 
@@ -15,7 +15,7 @@ class PeerRepository:
         )
         return MapperUtil.single_mapper(response, PeerInfoDTO)
 
-    def fetch_peer_info_by_id(self, key_id):
+    async def fetch_peer_info_by_id(self, key_id):
         response = (
             self.supabase.table("Peer_Info")
             .select("*")

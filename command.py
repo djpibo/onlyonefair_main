@@ -1,7 +1,7 @@
-from api.supabase.model.common import LoginDTO
-from api.supabase.model.point import ConsumeInfoDTO
-from api.supabase.model.presentation import ScreenDTO
-from api.supabase.model.quiz import ScoreInfoDTO
+from api.supabase.model import LoginDTO
+from api.supabase.model import ConsumeInfoDTO
+from api.supabase.model import ScreenDTO
+from api.supabase.model import ScoreInfoDTO
 from common.constants import *
 from common.util import ScoreUtil, CommonUtil
 from config.connect import connect_redis
@@ -32,60 +32,40 @@ class Commander:
         return scr_dto
 
     def start_card_polling(self, nfc_uid):
+        if self.common_mgr.validate_teacher(nfc_uid):
+            comment = f"바쁘신 와중에도 ONLYONE FAIR 공유회를 위해\n 귀한 시간 내주신 점 감사드립니다 🙂"
+            print(f"[INFO] 운영진 혹은 TF 인원입니다.")
 
-        if nfc_uid is not None:
+            return ScreenDTO(peer_company="ONLYONE FAIR", peer_name="운영진", enter_dvcd_kor="", used_score=0,
+                             acc_score=0, current_score=0, comment=comment)
 
-            if not nfc_uid.startswith('k'):
-                if self.common_mgr.validate_teacher(nfc_uid):
-                    comment = f"바쁘신 와중에도 ONLYONE FAIR 공유회를 위해\n 귀한 시간 내주신 점 감사드립니다 🙂"
-                    print(f"[INFO] 운영진 혹은 TF 인원입니다.")
+        argv1 = self.redis.get('company').decode('utf-8')
+        argv2 = self.redis.get('enter').decode('utf-8')
+        login_dto = self.common_mgr.login_setter(argv1, argv2, nfc_uid)
 
-                    return ScreenDTO(peer_company="ONLYONE FAIR", peer_name="운영진", enter_dvcd_kor="", used_score=0,
-                                     acc_score=0, current_score=0, comment=comment)
-            else:
-                if self.common_mgr.validate_id(nfc_uid[1:]):
-                    comment = f"존재하지 않는 사번입니다. 다시 한 번 입력해주세요 🙂"
-                    print(f"[INFO] 존재하지 않는 사번입니다.")
-                    return ScreenDTO(peer_company="ONLYONE FAIR", peer_name="???", enter_dvcd_kor="", used_score=0,
-                                     acc_score=0, current_score=0, comment=comment)
+        print(f"login_dto >> {login_dto}")
 
-            # self.common_mgr.count_up(nfc_uid) #TODO 마감치면서 올리기
-            argv1 = self.redis.get('company').decode('utf-8')
-            argv2 = self.redis.get('enter').decode('utf-8')
+        if login_dto.enter_dvcd == ENTER_EXIT_CODES.get('입장'):
+            scr_dto = self.validate_enter(login_dto)  # 입장 검증
+            if scr_dto is not None:
+                return scr_dto
+            return self.process_enter(login_dto)  # 입장 처리
 
-            login_dto = None
-            if not nfc_uid.startswith('k'):
-                login_dto = self.common_mgr.login_setter(argv1, argv2, nfc_uid)
-            else:
-                login_dto = self.common_mgr.login_setter_keyin(argv1, argv2, nfc_uid[1:])
+        elif login_dto.enter_dvcd == ENTER_EXIT_CODES.get('퇴장'):
+            recent_enter_info = self.enter_mgr.get_latest_enter(login_dto)
+            scr_dto = self.validate_exit(recent_enter_info, login_dto)
+            if scr_dto is not None:
+                return scr_dto
+            return self.process_exit(login_dto, recent_enter_info)  # 퇴장 처리
 
-            print(f"login_dto >> {login_dto}")
+        elif login_dto.enter_dvcd == ENTER_EXIT_CODES.get('촬영권'):
+            return self.point_consumer(login_dto)
 
-            if login_dto.enter_dvcd == ENTER_EXIT_CODES.get('입장'):
-                scr_dto = self.validate_enter(login_dto)  # 입장 검증
-                if scr_dto is not None:
-                    return scr_dto
-                return self.process_enter(login_dto)  # 입장 처리
-
-            elif login_dto.enter_dvcd == ENTER_EXIT_CODES.get('퇴장'):
-                recent_enter_info = self.enter_mgr.get_latest_enter(login_dto)
-                scr_dto = self.validate_exit(recent_enter_info, login_dto)
-                if scr_dto is not None:
-                    return scr_dto
-                return self.process_exit(login_dto, recent_enter_info)  # 퇴장 처리
-
-            elif login_dto.enter_dvcd == ENTER_EXIT_CODES.get('촬영권'):
-                return self.point_consumer(login_dto)
-
-            elif login_dto.enter_dvcd == ENTER_EXIT_CODES.get('포토미션'):
-                return self.mission_complete(login_dto)
-
-            else:
-                return self.process_welcome(login_dto)
+        elif login_dto.enter_dvcd == ENTER_EXIT_CODES.get('포토미션'):
+            return self.mission_complete(login_dto)
 
         else:
-            print(f"[ERROR] NFC UID 수신 오류")
-            return None
+            return self.process_welcome(login_dto)
 
     def validate_enter(self, login_dto: LoginDTO):
         print("[log] 입장 검증 진행")
@@ -357,3 +337,6 @@ class Commander:
         print("[INFO] 디지털비전보드 미션 수행")
 
         return scr_dto
+
+    async def wnt_to(self, _id):
+        await self.common_mgr.set_login_info(_id)

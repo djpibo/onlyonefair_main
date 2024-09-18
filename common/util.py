@@ -1,10 +1,7 @@
 from datetime import datetime
 import pytz
-from zoneinfo import ZoneInfo
-
-from api.supabase.model.nfc import EntranceInfoDTO
 from common.constants import *
-from typing import TypeVar, Type, List, Optional, Dict
+from typing import TypeVar, Type, List, Optional
 from pydantic import BaseModel
 from postgrest.base_request_builder import APIResponse
 
@@ -82,16 +79,3 @@ class MapperUtil:
         if len(response.data) > 1:
             raise ValueError("Expected a single result, but multiple records were found.")
         return dto_class(**response.data[0])
-
-    @staticmethod
-    def convert_dicts_to_lists(data: List[Dict]) -> List[List]:
-        # 데이터가 비어 있는 경우 빈 리스트 반환
-        if not data:
-            return []
-
-        # 딕셔너리의 키 순서를 유지하기 위해 첫 번째 딕셔너리의 키 순서를 사용
-        keys = list(data[0].keys())
-
-        # 각 딕셔너리의 값을 리스트로 변환
-        result = [list(d.values()) for d in data]
-        return result
